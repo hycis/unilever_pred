@@ -1,0 +1,79 @@
+# Python
+*.py[cod]
+
+# Data
+*.csv
+*.zip
+*.Rdata
+*.xls?
+
+# Packages
+*.egg
+*.egg-info
+/dist
+/build
+/eggs
+/parts
+/bin
+/var
+/sdist
+/develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+### Generic
+*.log
+*.sqlite?
+
+### Compiled binaries
+*.class
+*.jar
+
+*.o
+*.bin
+*.a
+*.lib
+*.so
+*.out
+
+*.obj
+*.exe
+*.dll
+*.com
+
+### *nix OS / apps
+*.swp
+*.swo
+*~
+
+### Mac OS generated
+__MACOSX
+Icon?
+*.DS_Store
+*.DS_Store?
+._*
+.Spotlight*
+.Trashes
+
+### Idea / pycharm generated
+/.idea
+
+### Windows generated
+ehthumbs.db
+thumbs.db
+Thumbs.db
