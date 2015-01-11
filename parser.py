@@ -9,6 +9,8 @@ import re
 AGREE_RE = re.compile(r'^.*?\((?P<number>\d+)\)$')
 TIMES_USED_RE = re.compile(r'(?P<number>\d+)')
 
+invalid_agree = set()
+
 
 def _utf_8_encoder(unicode_csv_data):
     for line in unicode_csv_data:
@@ -20,7 +22,7 @@ def csv_reader_utf8(file_path, **kwargs):
     Adapted from http://docs.python.org/2/library/csv.html
     """
 
-    f = codecs.open(file_path, encoding='utf-8', mode='rb')
+    f = codecs.open(file_path, encoding='ascii', mode='rb', errors='replace')
 
     # csv.py doesn't do Unicode; encode temporarily as UTF-8:
     csv_reader = csv_mod.reader(_utf_8_encoder(f), **kwargs)
@@ -34,20 +36,21 @@ def parse_bool(s):
     cell = s.lower()
     if cell == 'yes':
         return 1
-    if cell == 'no' or cell == 'na':
+    if cell in ('na', 'no', 'none'):
         return 0
     raise Exception("invalid bool: " + cell)
 
 
 def parse_na_or_number(s):
-    if s.lower() in ('na', ):
+    try:
+        return float(s)
+    except (ValueError, TypeError):
         return 0
-    return float(s)
 
 
 def parse_na_bool_or_number(s):
     s = s.lower()
-    if s in ('na', 'no'):
+    if s in ('na', 'no', 'none'):
         return 0
     if s in ('yes', ):
         return 1
@@ -96,12 +99,41 @@ def parse_how_much(s):
 
 def parse_agree(s):
     cell = s.lower()
-    if cell == 'na':
-        return 0
     m = AGREE_RE.match(cell)
     if not m:
-        raise Exception("invalid agree: " + s)
+        invalid_agree.add(cell)
+        return 0
     return int(m.group('number'))
+
+
+def parse_soak(s):
+    cell = s.lower()
+
+    if 'less than 2' in cell:
+        return 1.5
+    if 'less than 15 mins' in cell:
+        return .25
+    if 'less than 1' in cell or '15 min' in cell:
+        return .5
+    if cell == 'overnight':
+        return 8 # arbitrary
+    if 'more than 2' in cell or '2 hrs' in cell:
+        return 3 # arbitrary
+    return 0
+
+
+def parse_problem(s):
+    cell = s.lower()
+    if cell.startswith('no ') or cell == 'na' or cell == 'no':
+        return 0
+    return 1
+
+
+def parse_dissolve(s):
+    cell = s.lower()
+    if 'quickly' in cell or 'completely' in cell or 'both' in cell:
+        return 5
+    return parse_agree(s)
 
 
 def read_train(file_path):
@@ -111,32 +143,51 @@ def read_train(file_path):
         break
 
     formats = (
-        # copy response ID and product code
-        ([0, 1], parse_identity),
+        # response ID
+        ([0], int),
+        # product ID
+        ([1], lambda s: int(s[2:])),
         # parse ingredients
         (xrange(2, 155), parse_na_or_number),
         ([155, 229], parse_bool),
         ([156], parse_how_much),
         ([157], parse_times_used),
         (xrange(158, 229), parse_agree),
-        (xrange(229, 254), None),
-        (xrange(254, 258), parse_na_bool_or_number),
-        (xrange(258, 260), None),
+        (xrange(229, 254), parse_problem),
+        (xrange(254, 259), parse_na_bool_or_number),
+        ([259], parse_soak),
         (xrange(260, 264), parse_bool),
+        # Income, marrital status, employment, ... set to 0
         (xrange(264, 272), None),
+
+        # Employment hours
+        ([268], parse_na_or_number),
+
         # occupants
         (xrange(272, 277), parse_na_or_number),
 
+        (xrange(277, 288), parse_agree),
+        ([288], parse_dissolve),
+        (xrange(289, 294), parse_agree),
+        ([294], lambda s: 0 if s.lower() in ('na', 'no', 'none') else 1),
+        (xrange(295, 297), parse_agree),
+        ([297], parse_bool),
+        ([298], parse_soak),
+        (xrange(299, 301), parse_agree),
+
+        # overall opinion
+        ([301], parse_na_or_number),
     )
 
     sets = {}
-
     parsed_rows = []
     rownum = 1
+
     for row in csv:
         # allocate array
         parsed_row = range(0, len(row))
-
+        for i in xrange(0, len(row)):
+            parsed_row[i] = 0
         for format in formats:
             # Find distinct values in column
             if format[1] is None:
@@ -151,7 +202,6 @@ def read_train(file_path):
                     except Exception as e:
                         print("row#={} i={} cell={}".format(rownum, i, row[i]))
                         raise
-
         parsed_rows.append(parsed_row)
         rownum += 1
 
@@ -160,7 +210,10 @@ def read_train(file_path):
         print("key: " + str(k))
         for s in v:
             print(s)
-        print()
+        print("")
+
+    for a in invalid_agree:
+        print(a)
 
 
 if __name__ == '__main__':
