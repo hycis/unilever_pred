@@ -6,6 +6,8 @@ import csv as csv_mod
 import codecs
 import re
 
+import numpy as np
+
 AGREE_RE = re.compile(r'^.*?\((?P<number>\d+)\)$')
 TIMES_USED_RE = re.compile(r'(?P<number>\d+)')
 
@@ -136,7 +138,7 @@ def parse_dissolve(s):
     return parse_agree(s)
 
 
-def read_train(file_path):
+def read_csv(file_path):
     csv = csv_reader_utf8(file_path, dialect=csv_mod.excel)
     # skip first row which is header
     for row in csv:
@@ -215,6 +217,14 @@ def read_train(file_path):
     for a in invalid_agree:
         print(a)
 
+    return parsed_rows
+
 
 if __name__ == '__main__':
-    read_train('train.csv')
+    train = np.array(read_csv('train.csv'))
+    # Last column is the opinion score 0-7 (label)
+    np.save('train.npy', train)
+
+    sub = np.array(read_csv('sub.csv'))
+    # Last column is the test label which is all 0
+    np.save('test.npy', sub)
