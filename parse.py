@@ -167,13 +167,13 @@ def read_csv(file_path):
         (xrange(260, 264), parse_bool),
 
         # Rinse method, dry method
-        (xrange(264, 266), None),
+        # (xrange(264, 266), None),
 
         # income
         ([266], parse_income),
 
         # education, marrital status, employment, ... set to 0
-        (xrange(267, 272), None),
+        # (xrange(267, 272), None),
 
         # Employment hours
         ([268], parse_na_or_number),
