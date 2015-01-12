@@ -3,35 +3,17 @@
 from __future__ import unicode_literals
 
 import csv as csv_mod
-import codecs
 import re
 
 import numpy as np
 
+from utils import csv_reader_utf8, is_float
+
 AGREE_RE = re.compile(r'^.*?\((?P<number>\d+)\)$')
-TIMES_USED_RE = re.compile(r'(?P<number>\d+)')
+FIRST_NUMBER_RE = re.compile(r'(?P<number>\d+)')
+RANGE_RE = re.compile(r"(?P<a>\d+)\s*(?:to|-)\s*(?P<b>\d+)", re.I)
 
 invalid_agree = set()
-
-
-def _utf_8_encoder(unicode_csv_data):
-    for line in unicode_csv_data:
-        yield line.encode('utf-8')
-
-
-def csv_reader_utf8(file_path, **kwargs):
-    """
-    Adapted from http://docs.python.org/2/library/csv.html
-    """
-
-    f = codecs.open(file_path, encoding='ascii', mode='rb', errors='replace')
-
-    # csv.py doesn't do Unicode; encode temporarily as UTF-8:
-    csv_reader = csv_mod.reader(_utf_8_encoder(f), **kwargs)
-
-    for row in csv_reader:
-        # decode UTF-8 back to Unicode, cell by cell:
-        yield [unicode(cell, 'utf-8') for cell in row]
 
 
 def parse_bool(s):
@@ -65,20 +47,41 @@ def parse_identity(s):
 
 def parse_times_used(s):
     cell = s.lower()
-    if 'oct' in cell: # a date?
-        v = 1
-    elif cell == 'na':
+    if cell == 'na':
         v = 0
     elif cell == 'everyday':
         v = 20 # arbitrary
     else:
-        m = AGREE_RE.search(cell)
+        m = RANGE_RE.search(cell)
+        if m:
+            a = float(m.group('a'))
+            b = float(m.group('b'))
+            v = (a + b) / 2.0
+        else:
+            # get the first number found
+            m = FIRST_NUMBER_RE.search(cell)
+            v = float(m.group('number'))
+    return v
+
+
+def parse_income(s):
+    cell = s.replace(',', '')
+    return parse_range(cell.lower().replace('rs.',''))
+
+
+def parse_range(cell):
+    m = RANGE_RE.search(cell)
+    if m:
+        a = float(m.group('a'))
+        b = float(m.group('b'))
+        v = (a + b) / 2.0
+    else:
+        # get the first number found
+        m = FIRST_NUMBER_RE.search(cell)
         if m:
             v = float(m.group('number'))
         else:
-            # get the first number found
-            m = TIMES_USED_RE.search(cell)
-            v = int(m.group('number'))
+            v = 0
     return v
 
 
@@ -109,12 +112,16 @@ def parse_agree(s):
 
 
 def parse_soak(s):
-    cell = s.lower()
+    cell = s.lower().strip()
 
+    if cell.startswith('hour to less'):
+        return .75
+    if cell.startswith('15 mins to less'):
+        return (.25 + 1) / 2.
     if 'less than 2' in cell:
         return 1.5
     if 'less than 15 mins' in cell:
-        return .25
+        return .2
     if 'less than 1' in cell or '15 min' in cell:
         return .5
     if cell == 'overnight':
@@ -133,17 +140,16 @@ def parse_problem(s):
 
 def parse_dissolve(s):
     cell = s.lower()
-    if 'quickly' in cell or 'completely' in cell or 'both' in cell:
-        return 5
+    if 'quickly' in cell:
+        return 1
+    if 'completely' in cell:
+        return 2
+    if 'both' in cell:
+        return 3
     return parse_agree(s)
 
 
 def read_csv(file_path):
-    csv = csv_reader_utf8(file_path, dialect=csv_mod.excel)
-    # skip first row which is header
-    for row in csv:
-        break
-
     formats = (
         # response ID
         ([0], int),
@@ -155,12 +161,19 @@ def read_csv(file_path):
         ([156], parse_how_much),
         ([157], parse_times_used),
         (xrange(158, 229), parse_agree),
-        (xrange(229, 254), parse_problem),
+        (xrange(230, 254), parse_problem),
         (xrange(254, 259), parse_na_bool_or_number),
         ([259], parse_soak),
         (xrange(260, 264), parse_bool),
-        # Income, marrital status, employment, ... set to 0
-        (xrange(264, 272), None),
+
+        # Rinse method, dry method
+        (xrange(264, 266), None),
+
+        # income
+        ([266], parse_income),
+
+        # education, marrital status, employment, ... set to 0
+        (xrange(267, 272), None),
 
         # Employment hours
         ([268], parse_na_or_number),
@@ -181,38 +194,26 @@ def read_csv(file_path):
         ([301], parse_na_or_number),
     )
 
-    sets = {}
+    csv = csv_reader_utf8(file_path, dialect=csv_mod.excel)
+    # skip first row which is header
+    for row in csv:
+        break
+
     parsed_rows = []
     rownum = 1
 
-    for row in csv:
-        # allocate array
-        parsed_row = range(0, len(row))
-        for i in xrange(0, len(row)):
-            parsed_row[i] = 0
-        for format in formats:
-            # Find distinct values in column
-            if format[1] is None:
+    try:
+        for row in csv:
+            # allocate array
+            parsed_row = [0] * len(row)
+            for format in formats:
                 for i in format[0]:
-                    if not sets.get(i):
-                        sets[i] = set()
-                    sets[i].add(row[i].strip().lower())
-            else:
-                for i in format[0]:
-                    try:
-                        parsed_row[i] = format[1](row[i])
-                    except Exception as e:
-                        print("row#={} i={} cell={}".format(rownum, i, row[i]))
-                        raise
-        parsed_rows.append(parsed_row)
-        rownum += 1
-
-    # Print distinct values for each col
-    for (k, v) in sets.iteritems():
-        print("key: " + str(k))
-        for s in v:
-            print(s)
-        print("")
+                    parsed_row[i] = format[1](row[i])
+            parsed_rows.append(parsed_row)
+            rownum += 1
+    except Exception as e:
+        print("row#={} i={} cell={}".format(rownum, i, row[i]))
+        raise
 
     for a in invalid_agree:
         print(a)
