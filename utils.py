@@ -14,7 +14,8 @@ def is_float(s):
 
 
 def write_pred(filename, ids, preds):
-    os.mkdir('results')
+    if not os.path.exists('results'):
+        os.mkdir('results')
     with open("results/" + filename, "w") as f:
         f.write("ID,Overall.Opinion\n")
         for (id, p) in zip(ids, preds):
