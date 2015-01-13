@@ -50,7 +50,7 @@ def parse_times_used(s):
     if cell == 'na':
         v = 0
     elif cell == 'everyday':
-        v = 20 # arbitrary
+        v = 30 # arbitrary
     else:
         m = RANGE_RE.search(cell)
         if m:
@@ -112,22 +112,52 @@ def parse_agree(s):
 
 
 def parse_soak(s):
-    cell = s.lower().strip()
+    cell = s.lower().strip().replace('  ', ' ')
 
-    if cell.startswith('hour to less'):
+    if cell == '+ hour to less than 1 hour' or cell == 'hour to less than 1 hour':
         return .75
+    if cell == '1 + hour to less than 2 hours' or cell == '1 hour to less than 2 hours':
+        return 1.75
+    if cell == '1 hour to less than 1 hours' or cell == '1 hour to less than 1+ hours':
+        return 1.25
     if cell.startswith('15 mins to less'):
-        return (.25 + 1) / 2.
-    if 'less than 2' in cell:
-        return 1.5
+        return (.25 + .5) / 2.
     if 'less than 15 mins' in cell:
-        return .2
-    if 'less than 1' in cell or '15 min' in cell:
-        return .5
+        return .25 / 2.
     if cell == 'overnight':
         return 8 # arbitrary
     if 'more than 2' in cell or '2 hrs' in cell:
         return 3 # arbitrary
+    if 'not' in cell or cell == 'na':
+        return 0
+    raise Exception("invalid soak: " + cell)
+
+
+def parse_rinse(s):
+    cell = s.lower().lstrip('*')
+    if cell.startswith('pre treat'):
+        return 1
+    if cell.startswith('pre rinse'):
+        return 2
+    if cell.startswith('soak'):
+        return 3
+    if cell.startswith('wash'):
+        return 4
+    return 0
+
+
+def parse_dry(s):
+    cell = s.lower()
+    if 'dryer' in cell or 'with heat' in cell:
+        return 1
+    if 'inside' in cell or 'without heat' in cell or 'tumble' in cell:
+        return 2
+    if 'sun and shade' in cell:
+        return 3.5
+    if ' shade' in cell:
+        return 3
+    if ' sun' in cell:
+        return 4
     return 0
 
 
@@ -167,7 +197,8 @@ def read_csv(file_path):
         (xrange(260, 264), parse_bool),
 
         # Rinse method, dry method
-        # (xrange(264, 266), None),
+        ([264], parse_rinse),
+        ([265], parse_dry),
 
         # income
         ([266], parse_income),
