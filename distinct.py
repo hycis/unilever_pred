@@ -5,8 +5,9 @@
 from __future__ import unicode_literals
 
 import csv as csv_mod
+import re
 
-from utils import csv_reader_utf8, is_float
+from utils import csv_reader_utf8, is_float, standardize
 
 
 def compute_distinct(file_path, sets=None):
@@ -29,7 +30,7 @@ def compute_distinct(file_path, sets=None):
             if is_float(cell):
                 sets[i].add('<num>')
                 continue
-            cell = cell.lower()
+            cell = standardize(cell)
             sets[i].add(cell)
 
     return sets
@@ -41,6 +42,8 @@ if __name__ == '__main__':
 
     for i in xrange(0, len(sets)):
         print(str(i) + ":")
-        for s in sets[i]:
+        sorted = list(sets[i])
+        sorted.sort()
+        for s in sorted:
             print(s)
         print("========================")
