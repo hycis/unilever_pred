@@ -3,6 +3,25 @@ from __future__ import unicode_literals
 import csv as csv_mod
 import codecs
 import os
+import re
+
+
+COLLAPSE_WHITESPACE_RE = re.compile(r'\s+')
+AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
+AGREE_STD_RE = re.compile(r"(?<!\w)(little|much|a|it)(?!\w)", re.I)
+
+
+def collapse_whitespace(s):
+    return COLLAPSE_WHITESPACE_RE.sub(' ', s)
+
+
+def standardize(s):
+    cell = s.lower()
+    m = AGREE_RE.search(cell)
+    if m:
+        cell = AGREE_RE.sub(r" (\g<number>)", cell)
+        cell = AGREE_STD_RE.sub("", cell)
+    return collapse_whitespace(cell.strip("* "))
 
 
 def is_float(s):
