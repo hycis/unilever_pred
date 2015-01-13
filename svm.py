@@ -19,13 +19,26 @@ def main():
     clf.fit(train.features, train.labels)
     out_preds = clf.predict(test.features)
     out_test_ids = test.ids
-    write_pred("svm_preds.csv", out_test_ids, out_preds)
+    write_pred("svm.csv", out_test_ids, out_preds)
 
     clf = svm.SVC()
     clf.fit(train.features_no_ingre, train.labels)
     out_preds = clf.predict(test.features_no_ingre)
     out_test_ids = test.ids
-    write_pred("svm_preds_no_ingre.csv", out_test_ids, out_preds)
+    write_pred("svm_no_ingre.csv", out_test_ids, out_preds)
+
+
+    clf = svm.SVR()
+    clf.fit(train.features, train.labels)
+    out_preds = clf.predict(test.features)
+    out_test_ids = test.ids
+    write_pred("svm_reg.csv", out_test_ids, out_preds)
+
+    clf = svm.SVR()
+    clf.fit(train.features_no_ingre, train.labels)
+    out_preds = clf.predict(test.features_no_ingre)
+    out_test_ids = test.ids
+    write_pred("svm_reg_no_ingre.csv", out_test_ids, out_preds)
 
 
     """
