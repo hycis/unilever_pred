@@ -22,6 +22,35 @@ def write_pred(filename, ids, preds):
             f.write("{},{}\n".format(int(id), int(p)))
 
 
+def filter_index(arr, filter_fn):
+    """
+    :param arr:
+    :param filter_fn:
+    :return: Returns array of indexes of elements in arr that satisfies the filter.
+    """
+    indexes = []
+    i = 0
+    for elem in arr:
+        if filter_fn(elem):
+            indexes.append(i)
+        i += 1
+    return indexes
+
+
+def find_max(arr):
+    """
+    :param arr: list of numbers.
+    :return: zero-based index of the max element.
+    """
+    themax = arr[0]
+    theindex = 0
+    for i in xrange(1, len(arr)):
+        if arr[i] > themax:
+            themax = arr[i]
+            theindex = i
+    return theindex
+
+
 def _utf_8_encoder(unicode_csv_data):
     for line in unicode_csv_data:
         yield line.encode('utf-8')
