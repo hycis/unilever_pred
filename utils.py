@@ -11,6 +11,15 @@ AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
 AGREE_STD_RE = re.compile(r"(?<!\w)(little|much|a|it)(?!\w)", re.I)
 
 
+def interval(start, end):
+    """
+    :param start:
+    :param end:
+    :return: a list of integers between start and end inclusively.
+    """
+    return range(start, end + 1)
+
+
 def collapse_whitespace(s):
     return COLLAPSE_WHITESPACE_RE.sub(' ', s)
 
