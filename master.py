@@ -2,6 +2,8 @@
 
 # TODO: train svm per product and test using each svm, then avg the score
 
+import itertools
+
 import datetime
 import numpy as np
 from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
@@ -107,30 +109,18 @@ def main():
         },
         {
             "model": ensemble.RandomForestRegressor,
-            "params": [
-                {"n_estimators": 10},
-                {"n_estimators": 20},
-                {"n_estimators": 30},
-                {"n_estimators": 100},
-            ],
+            "params": [{"n_estimators": p[0], "min_samples_leaf": p[1], "max_depth": p[2]}
+                       for p in itertools.product(xrange(5, 25, 5), xrange(5, 25, 5), xrange(5, 20, 5))],
         },
         {
             "model": ensemble.ExtraTreesRegressor,
-            "params": [
-                {"n_estimators": 10},
-                {"n_estimators": 20},
-                {"n_estimators": 30},
-                {"n_estimators": 100},
-            ],
+            "params": [{"n_estimators": p[0], "min_samples_leaf": p[1], "max_depth": p[2]}
+                       for p in itertools.product(xrange(5, 25, 5), xrange(5, 25, 5), xrange(5, 20, 5))],
         },
         {
             "model": tree.DecisionTreeRegressor,
-            "params": [
-                {"n_estimators": 10},
-                {"n_estimators": 20},
-                {"n_estimators": 30},
-                {"n_estimators": 100},
-            ],
+            "params": [{"min_samples_leaf": p[0], "max_depth": p[1]}
+                       for p in itertools.product(xrange(5, 25, 5), xrange(5, 20, 5))],
         },
     ]
 
@@ -183,6 +173,8 @@ def main():
                         train_log.flush()
                         print(scoreline)
                         overall.append({"mse": this_mse, "filename": out_filename})
+                        if modelcls == tree.DecisionTreeRegressor:
+                            tree.export_graphviz(clf, out_file=out_filename.replace(".csv", ".dot"))
 
                         print("{}: CV with params={} ...".format(fn_name, params))
                         np.random.seed(123)
@@ -217,13 +209,13 @@ def main():
                         out_test_ids, out_preds, _ = do_cluster(modelcls, **args)
                         out_filename = "cluster_" + get_filename(fn_name, params, out_suffix)
                         write_pred(out_filename, out_test_ids, out_preds)
-                        train_preds = clf.predict(train_features)
-                        this_mse = mse(train.labels, train_preds)
-                        scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                        train_log.write(scoreline)
-                        train_log.flush()
-                        print(scoreline)
-                        overall.append({"mse": this_mse, "filename": out_filename})
+                        #train_preds = clf.predict(train_features)
+                        #this_mse = mse(train.labels, train_preds)
+                        #scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                        #train_log.write(scoreline)
+                        #train_log.flush()
+                        #print(scoreline)
+                        #overall.append({"mse": this_mse, "filename": out_filename})
 
                         for ensemble_model in [ensemble.BaggingRegressor, ensemble.AdaBoostRegressor]:
                             for nestimators in [10, 20, 50, 100]:

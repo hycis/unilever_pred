@@ -289,6 +289,8 @@ def neutral_na(data):
 
 if __name__ == '__main__':
     train = np.array(read_csv('train.csv'))
+    # this row has a score of NA (invalid), change to 1.
+    train[6269, -1] = 1
     # Last column is the opinion score 0-7 (label)
     np.save('train.npy', train)
     np.save('train_neutral.npy', neutral_na(train))
