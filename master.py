@@ -7,7 +7,7 @@ import numpy as np
 from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
 
 from data import DataSet, TRAIN_FILENAME, TEST_FILENAME
-from cluster import compute_clusters
+from cluster import compute_clusters, get_non_na_only
 from utils import write_pred, filter_index, mse
 
 
@@ -74,18 +74,20 @@ def do_cluster(modelcls, **kwargs):
 
 
 def main():
+    import sys
     train = DataSet(TRAIN_FILENAME)
     test = DataSet(TEST_FILENAME)
-    clusters, _ = compute_clusters(train, test)
+    clusters, prod_id_to_mask = compute_clusters(train, test)
+    non_na_indexes = get_non_na_only(prod_id_to_mask)
 
     # feature sets
-    fsets = ['', '_no_ingre', '_no_ingre_prob']
+    fsets = ['_oo_only', 'non_na', '', '_no_ingre', '_no_ingre_prob']
 
     models = [
         {
             "model": svm.SVR,
             "params": [
-                #{"kernel": "linear"},
+                {"kernel": "linear"},
                 {"kernel": "rbf"},
             ],
         },
@@ -132,110 +134,126 @@ def main():
         },
     ]
 
-    train_log = open("train.log", "w+")
+    trainfilenamesuffix = ""
+    if len(sys.argv) >= 2:
+        model_idx = int(sys.argv[1])
+        models = [models[model_idx]]
+        trainfilenamesuffix = str(model_idx)
+
+    train_log = open("train" + trainfilenamesuffix + ".log", "w+")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
 
     overall = []
 
-    for fset in fsets:
-        print("Feature set={}".format(fset))
-        train_features = getattr(train, 'features' + fset)
-        test_features = getattr(test, 'features' + fset)
-        out_suffix = fset
+    for dataset in [0, 1]:
+        out_suffix = ("norm", "neutral")[dataset]
 
-        for to_scale in [0, 1]:
-            out_suffix += "_scaled" if to_scale else ""
-            for model in models:
-                modelcls = model['model']
-                modelparams = model['params']
-                for params in modelparams:
-                    np.random.seed(123)
-                    params = str_params(params)
-                    fn_name = modelcls.__name__
-                    print("{}: training with params={} ...".format(fn_name, params))
-                    clf = modelcls(**params)
-                    clf.fit(train_features, train.labels)
-                    out_preds = clf.predict(test_features)
-                    out_test_ids = test.ids
-                    out_filename = get_filename(fn_name, params, out_suffix)
-                    write_pred(out_filename, out_test_ids, out_preds)
-                    train_preds = clf.predict(train_features)
-                    this_mse = mse(train.labels, train_preds)
-                    scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                    train_log.write(scoreline)
-                    train_log.flush()
-                    print(scoreline)
-                    overall.append({"mse": this_mse, "filename": out_filename})
+        for fset in fsets:
+            print("Feature set={}".format(fset))
+            if fset == 'non_na':
+                train_features = train.data[:, non_na_indexes]
+                test_features = test.data[:, non_na_indexes]
+            else:
+                train_features = getattr(train, 'features' + fset)
+                test_features = getattr(test, 'features' + fset)
+            out_suffix += "_" + fset
 
-                    print("{}: CV with params={} ...".format(fn_name, params))
-                    np.random.seed(123)
-                    clf = modelcls(**params)
-                    scores = cross_validation.cross_val_score(clf, train_features, train.labels,
-                                                              cv=5, scoring='mean_squared_error')
-                    out_preds = clf.predict(test_features)
-                    out_test_ids = test.ids
-                    out_filename = "cv_" + get_filename(fn_name, params, out_suffix)
-                    write_pred(out_filename, out_test_ids, out_preds)
-                    train_preds = clf.predict(train_features)
-                    this_mse = mse(train.labels, train_preds)
-                    scoreline = "{}: mean={:.4f} std={:.4f}\n".format(fn_name, scores.mean(), scores.std())
-                    train_log.write(scoreline)
-                    train_log.flush()
-                    print(scoreline)
-                    overall.append({"mse": this_mse, "filename": out_filename})
+            for to_scale in [0, 1]:
+                out_suffix += "_scaled" if to_scale else ""
+                for model in models:
+                    modelcls = model['model']
+                    modelparams = model['params']
+                    for params in modelparams:
+                        np.random.seed(123)
+                        params = str_params(params)
+                        fn_name = modelcls.__name__
+                        print("{}: training with params={} ...".format(fn_name, params))
+                        clf = modelcls(**params)
+                        clf.fit(train_features, train.labels)
+                        out_preds = clf.predict(test_features)
+                        out_test_ids = test.ids
+                        out_filename = get_filename(fn_name, params, out_suffix)
+                        write_pred(out_filename, out_test_ids, out_preds)
+                        train_preds = clf.predict(train_features)
+                        this_mse = mse(train.labels, train_preds)
+                        scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                        train_log.write(scoreline)
+                        train_log.flush()
+                        print(scoreline)
+                        overall.append({"mse": this_mse, "filename": out_filename})
 
-                    args = {
-                        "params": params,
-                        "clusters": clusters,
-                        "train_prod_ids": train.prod_ids,
-                        "train_features": train_features,
-                        "train_labels": train.labels,
-                        "test_ids": test.ids,
-                        "test_prod_ids": test.prod_ids,
-                        "test_features": test_features,
-                    }
-                    args = str_params(args)
-                    out_test_ids, out_preds, _ = do_cluster(modelcls, **args)
-                    out_filename = "cluster_" + get_filename(fn_name, params, out_suffix)
-                    write_pred(out_filename, out_test_ids, out_preds)
-                    train_preds = clf.predict(train_features)
-                    this_mse = mse(train.labels, train_preds)
-                    scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                    train_log.write(scoreline)
-                    train_log.flush()
-                    print(scoreline)
-                    overall.append({"mse": this_mse, "filename": out_filename})
+                        print("{}: CV with params={} ...".format(fn_name, params))
+                        np.random.seed(123)
+                        clf = modelcls(**params)
+                        scores = cross_validation.cross_val_score(clf, train_features, train.labels,
+                                                                  cv=5, scoring='mean_squared_error')
+                        """
+                        out_preds = clf.predict(test_features)
+                        out_test_ids = test.ids
+                        out_filename = "cv_" + get_filename(fn_name, params, out_suffix)
+                        write_pred(out_filename, out_test_ids, out_preds)
+                        train_preds = clf.predict(train_features)
+                        this_mse = mse(train.labels, train_preds)
+                        """
+                        scoreline = "{}: mean={:.4f} std={:.4f}\n".format(fn_name, scores.mean(), scores.std())
+                        train_log.write(scoreline)
+                        train_log.flush()
+                        print(scoreline)
+                        #overall.append({"mse": this_mse, "filename": out_filename})
 
-                    for ensemble_model in [ensemble.BaggingRegressor, ensemble.AdaBoostRegressor]:
-                        for nestimators in [10, 20, 50, 100]:
-                            ensemble_params = {'n_estimators': nestimators}
-                            print("{}: {} ensemble with params={} ...".format(fn_name, ensemble_model.__name__, ensemble_params))
-                            np.random.seed(123)
-                            clf = modelcls(**params)
-                            clf2 = ensemble_model(base_estimator=clf, **ensemble_params)
-                            clf2.fit(train_features, train.labels)
-                            out_preds = clf2.predict(test_features)
-                            out_test_ids = test.ids
+                        args = {
+                            "params": params,
+                            "clusters": clusters,
+                            "train_prod_ids": train.prod_ids,
+                            "train_features": train_features,
+                            "train_labels": train.labels,
+                            "test_ids": test.ids,
+                            "test_prod_ids": test.prod_ids,
+                            "test_features": test_features,
+                        }
+                        args = str_params(args)
+                        out_test_ids, out_preds, _ = do_cluster(modelcls, **args)
+                        out_filename = "cluster_" + get_filename(fn_name, params, out_suffix)
+                        write_pred(out_filename, out_test_ids, out_preds)
+                        train_preds = clf.predict(train_features)
+                        this_mse = mse(train.labels, train_preds)
+                        scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                        train_log.write(scoreline)
+                        train_log.flush()
+                        print(scoreline)
+                        overall.append({"mse": this_mse, "filename": out_filename})
 
-                            ens_out_filename = get_filename(ensemble_model.__name__, ensemble_params, "").replace(".csv", "_")
-                            out_filename = ens_out_filename + get_filename(fn_name, params, out_suffix)
-                            write_pred(out_filename, out_test_ids, out_preds)
-                            train_preds = clf2.predict(train_features)
-                            this_mse = mse(train.labels, train_preds)
-                            scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                            train_log.write(scoreline)
-                            train_log.flush()
-                            print(scoreline)
-                            overall.append({"mse": this_mse, "filename": out_filename})
+                        for ensemble_model in [ensemble.BaggingRegressor, ensemble.AdaBoostRegressor]:
+                            for nestimators in [10, 20, 50, 100]:
+                                ensemble_params = {'n_estimators': nestimators}
+                                print("{}: {} ensemble with params={} ...".format(fn_name, ensemble_model.__name__, ensemble_params))
+                                np.random.seed(123)
+                                clf = modelcls(**params)
+                                clf2 = ensemble_model(base_estimator=clf, **ensemble_params)
+                                clf2.fit(train_features, train.labels)
+                                out_preds = clf2.predict(test_features)
+                                out_test_ids = test.ids
 
-            train_features = preprocessing.scale(train_features)
-            test_features = preprocessing.scale(test_features)
+                                ens_out_filename = get_filename(ensemble_model.__name__, ensemble_params, "").replace(".csv", "_")
+                                out_filename = ens_out_filename + get_filename(fn_name, params, out_suffix)
+                                write_pred(out_filename, out_test_ids, out_preds)
+                                train_preds = clf2.predict(train_features)
+                                this_mse = mse(train.labels, train_preds)
+                                scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                                train_log.write(scoreline)
+                                train_log.flush()
+                                print(scoreline)
+                                overall.append({"mse": this_mse, "filename": out_filename})
 
+                train_features = preprocessing.scale(train_features)
+                test_features = preprocessing.scale(test_features)
+        train = DataSet("train_neutral.npy")
+        test = DataSet("test_neutral.npy")
 
     train_log.write(SEP)
-    overall = sorted(overall, key=lambda a: a['mse'])
+    overall = sorted(overall, key=lambda a: -a['mse'])
     for a in overall:
         train_log.write("{:.4f}: {}\n".format(a['mse'], a['filename']))
     train_log.close()

@@ -60,7 +60,7 @@ def write_pred(filename, ids, preds):
     with open("results/" + filename, "w") as f:
         f.write("ID,Overall.Opinion\n")
         for (id, p) in zip(ids, preds):
-            f.write("{},{}\n".format(id, p))
+            f.write("{},{:.6f}\n".format(id, p))
 
 
 def filter_index(arr, filter_fn):

@@ -10,6 +10,9 @@ from data import DataSet, TEST_FILENAME, TRAIN_FILENAME
 from utils import filter_index, csv_reader_utf8, interval
 
 
+AGREE_INDEXES = interval(155, 228) + interval(277, 287) + interval(289, 293) + interval(295, 296) + interval(299, 300)
+
+
 def distance(mask1, mask2):
     sum = 0
     for i in xrange(0, len(mask1)):
@@ -22,12 +25,23 @@ def bits(mask):
     return "".join(map(str, mask))
 
 
+def get_non_na_only(prod_id_to_mask):
+    overallmask = prod_id_to_mask.values()[0]
+    for mask in prod_id_to_mask.values()[1:]:
+        for i in xrange(0, len(mask)):
+            overallmask[i] &= mask[i]
+    indexes = []
+    for i in xrange(0, len(overallmask)):
+        if overallmask[i]:
+            indexes.append(AGREE_INDEXES[i])
+    return indexes
+
+
 def calc(dataset, prod_masks):
-    feature_indexes = interval(158, 228) + interval(277, 287) + interval(289, 293) + interval(295, 296) + interval(299, 300)
     for prod_id in dataset.unique_prod_ids:
         prod_indexes = dataset.get_prod_indexes(prod_id)
         prod_rows = dataset.data[prod_indexes, :]
-        prod_rows = prod_rows[:, feature_indexes]
+        prod_rows = prod_rows[:, AGREE_INDEXES]
         prod_mask = [0] * len(prod_rows[0])
         for row in prod_rows:
             i = 0
@@ -119,13 +133,11 @@ def main():
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(clusters)
 
-    #for cluster in clusters:
-    #    print("[" + ", ".join(map(str, cluster)) + "],")
-    #print("")
-
-    #for (pid, cluster_idx) in prod_id_to_cluster.iteritems():
-    #    print("{: 4d}: {},".format(pid, cluster_idx))
-    #print("")
+    overallmask = prod_id_to_mask.values()[0]
+    for mask in prod_id_to_mask.values()[1:]:
+        for i in xrange(0, len(mask)):
+            overallmask[i] &= mask[i]
+    print(bits(overallmask))
 
 
 if __name__ == '__main__':

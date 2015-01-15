@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# TODO: make NA for agree qns neutral
+
 from __future__ import unicode_literals
 
 import csv as csv_mod
@@ -170,13 +172,27 @@ def parse_problem(s):
 
 def parse_dissolve(s):
     cell = s.lower()
+    v = parse_agree(s)
+    if v > 0:
+        return v
     if 'quickly' in cell:
+        return 4
+    if 'completely' in cell or 'both' in cell:
+        return 5
+    return 0
+
+
+def parse_marriage(s):
+    cell = s.lower().strip()
+    if cell.startswith('separated'):
+        return 0
+    if cell.startswith('cohabiting'):
+        return .5
+    if cell.startswith('single - living'):
+        return 0
+    if cell.startswith('married'):
         return 1
-    if 'completely' in cell:
-        return 2
-    if 'both' in cell:
-        return 3
-    return parse_agree(s)
+    return 0
 
 
 def read_csv(file_path):
@@ -252,11 +268,32 @@ def read_csv(file_path):
     return parsed_rows
 
 
+def neutral_na(data):
+    import cluster
+    count = len(cluster.AGREE_INDEXES)
+    mins = [1e99] * count
+    maxs = [-1e99] * count
+    for i in xrange(0, count):
+        idx = cluster.AGREE_INDEXES[i]
+        for rowidx in xrange(0, len(data)):
+            mins[i] = min(mins[i], data[rowidx, idx])
+            maxs[i] = max(maxs[i], data[rowidx, idx])
+
+    for i in xrange(0, count):
+        idx = cluster.AGREE_INDEXES[i]
+        for rowidx in xrange(0, len(data)):
+            if data[rowidx, idx] < .1:
+                data[rowidx, idx] = (mins[i] + maxs[i]) * .5
+    return data
+
+
 if __name__ == '__main__':
     train = np.array(read_csv('train.csv'))
     # Last column is the opinion score 0-7 (label)
     np.save('train.npy', train)
+    np.save('train_neutral.npy', neutral_na(train))
 
     sub = np.array(read_csv('sub.csv'))
     # Last column is the test label which is all 0
     np.save('test.npy', sub)
+    np.save('test_neutral.npy', neutral_na(sub))

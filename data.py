@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import numpy as np
 
+import cluster
 from utils import interval, filter_index
 
 
@@ -34,5 +35,13 @@ class DataSet(object):
         :return: Features without ingredients and without the optional problems.
         """
         indexes = interval(155, 230) + interval(254, len(self.data[0]) - 2)
+        return self.data[:, indexes]
+
+    @property
+    def features_oo_only(self):
+        """
+        :return: overall opinion only
+        """
+        indexes = interval(155, 161) + [216, 277, 278, 287, 288, 293]
         return self.data[:, indexes]
 
