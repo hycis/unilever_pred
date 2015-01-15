@@ -30,7 +30,7 @@ def mse(arr1, arr2):
     sum = 0
     for a, b in zip(arr1, arr2):
         sum += (a - b) ** 2
-    return sum
+    return sum / len(arr1)
 
 
 def collapse_whitespace(s):
