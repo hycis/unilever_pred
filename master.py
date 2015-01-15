@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import unicode_literals
-
 # TODO: train svm per product and test using each svm, then avg the score
 
 import datetime
@@ -24,6 +22,10 @@ def get_filename(fn_name, params):
         value = params[key]
         pairs.append(key + "=" + str(value))
     return fn_name + "_" + "_".join(pairs) + ".csv"
+
+
+def str_params(p):
+    return {str(k): v for (k, v) in p.iteritems()}
 
 
 def do_cluster(modelcls, **kwargs):
@@ -132,6 +134,7 @@ def main():
                 modelparams = model['params']
                 for params in modelparams:
                     np.random.seed(123)
+                    params = str_params(params)
                     fn_name = modelcls.__name__
                     print("{}: training with params={} ...".format(fn_name, params))
                     clf = modelcls(**params)
@@ -159,6 +162,7 @@ def main():
                         "test_prod_ids": test.prod_ids,
                         "test_features": test_features,
                     }
+                    args = str_params(args)
                     out_test_ids, out_preds, _ = do_cluster(modelcls, **args)
                     out_filename = "cluster_" + get_filename(fn_name, params)
                     write_pred(out_filename, out_test_ids, out_preds)
