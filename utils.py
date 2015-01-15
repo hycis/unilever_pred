@@ -5,6 +5,8 @@ import codecs
 import os
 import re
 
+from sklearn import svm, preprocessing
+
 
 COLLAPSE_WHITESPACE_RE = re.compile(r'\s+')
 AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
@@ -18,6 +20,10 @@ def interval(start, end):
     :return: a list of integers between start and end inclusively.
     """
     return range(start, end + 1)
+
+
+def norm(features):
+    return preprocessing.scale(features)
 
 
 def collapse_whitespace(s):
