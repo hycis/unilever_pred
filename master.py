@@ -4,24 +4,26 @@
 
 import datetime
 import numpy as np
-from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble
+from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
 
 from data import DataSet, TRAIN_FILENAME, TEST_FILENAME
 from cluster import compute_clusters
-from utils import write_pred, filter_index
+from utils import write_pred, filter_index, mse
 
 
 SEP = "=" * 80 + "\n"
 
 
-def get_filename(fn_name, params):
+def get_filename(fn_name, params, suffix):
     keys = list(params.keys())
     keys.sort()
     pairs = []
     for key in keys:
         value = params[key]
         pairs.append(key + "=" + str(value))
-    return fn_name + "_" + "_".join(pairs) + ".csv"
+    if suffix:
+        suffix = suffix + "_"
+    return fn_name + "_" + suffix + "_".join(pairs) + ".csv"
 
 
 def str_params(p):
@@ -106,6 +108,7 @@ def main():
                 {"n_estimators": 10},
                 {"n_estimators": 20},
                 {"n_estimators": 30},
+                {"n_estimators": 100},
             ],
         },
         {
@@ -114,6 +117,16 @@ def main():
                 {"n_estimators": 10},
                 {"n_estimators": 20},
                 {"n_estimators": 30},
+                {"n_estimators": 100},
+            ],
+        },
+        {
+            "model": tree.DecisionTreeRegressor,
+            "params": [
+                {"n_estimators": 10},
+                {"n_estimators": 20},
+                {"n_estimators": 30},
+                {"n_estimators": 100},
             ],
         },
     ]
@@ -123,12 +136,16 @@ def main():
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
 
+    overall = []
+
     for fset in fsets:
         print("Feature set={}".format(fset))
         train_features = getattr(train, 'features' + fset)
         test_features = getattr(test, 'features' + fset)
+        out_suffix = fset
 
         for to_scale in [0, 1]:
+            out_suffix += "_scaled" if to_scale else ""
             for model in models:
                 modelcls = model['model']
                 modelparams = model['params']
@@ -141,16 +158,30 @@ def main():
                     clf.fit(train_features, train.labels)
                     out_preds = clf.predict(test_features)
                     out_test_ids = test.ids
-
-                    out_filename = get_filename(fn_name, params)
+                    out_filename = get_filename(fn_name, params, out_suffix)
                     write_pred(out_filename, out_test_ids, out_preds)
+                    this_mse = mse(train.labels, out_preds)
+                    scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                    train_log.write(scoreline)
+                    train_log.flush()
+                    print(scoreline)
+                    overall.append({"mse": this_mse, "filename": out_filename})
 
+                    print("{}: CV with params={} ...".format(fn_name, params))
+                    np.random.seed(123)
+                    clf = modelcls(**params)
                     scores = cross_validation.cross_val_score(clf, train_features, train.labels,
                                                               cv=5, scoring='mean_squared_error')
+                    out_preds = clf.predict(test_features)
+                    out_test_ids = test.ids
+                    out_filename = "cv_" + get_filename(fn_name, params, out_suffix)
+                    write_pred(out_filename, out_test_ids, out_preds)
+                    this_mse = mse(train.labels, out_preds)
                     scoreline = "{}: mean={:.4f} std={:.4f}\n".format(fn_name, scores.mean(), scores.std())
                     train_log.write(scoreline)
                     train_log.flush()
                     print(scoreline)
+                    overall.append({"mse": this_mse, "filename": out_filename})
 
                     args = {
                         "params": params,
@@ -164,12 +195,44 @@ def main():
                     }
                     args = str_params(args)
                     out_test_ids, out_preds, _ = do_cluster(modelcls, **args)
-                    out_filename = "cluster_" + get_filename(fn_name, params)
+                    out_filename = "cluster_" + get_filename(fn_name, params, out_suffix)
                     write_pred(out_filename, out_test_ids, out_preds)
+                    this_mse = mse(train.labels, out_preds)
+                    scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                    train_log.write(scoreline)
+                    train_log.flush()
+                    print(scoreline)
+                    overall.append({"mse": this_mse, "filename": out_filename})
+
+                    for ensemble_model in [ensemble.BaggingRegressor, ensemble.AdaBoostRegressor]:
+                        for nestimators in [10, 20, 50, 100]:
+                            ensemble_params = {'n_estimators': nestimators}
+                            print("{}: {} ensemble with params={} ...".format(fn_name, ensemble_model.__name__, ensemble_params))
+                            np.random.seed(123)
+                            clf = modelcls(**params)
+                            clf2 = ensemble_model(base_estimator=clf, **ensemble_params)
+                            clf2.fit(train_features, train.labels)
+                            out_preds = clf2.predict(test_features)
+                            out_test_ids = test.ids
+
+                            ens_out_filename = get_filename(ensemble_model.__name__, ensemble_params, "").replace(".csv", "_")
+                            out_filename = ens_out_filename + get_filename(fn_name, params, out_suffix)
+                            write_pred(out_filename, out_test_ids, out_preds)
+                            this_mse = mse(train.labels, out_preds)
+                            scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
+                            train_log.write(scoreline)
+                            train_log.flush()
+                            print(scoreline)
+                            overall.append({"mse": this_mse, "filename": out_filename})
 
             train_features = preprocessing.scale(train_features)
             test_features = preprocessing.scale(test_features)
 
+
+    train_log.write(SEP)
+    overall = sorted(overall, key=lambda a: a['mse'])
+    for a in overall:
+        train_log.write("{:.4f}: {}\n".format(a['mse'], a['filename']))
     train_log.close()
 
 
