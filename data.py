@@ -2,11 +2,18 @@ from __future__ import unicode_literals
 
 import numpy as np
 
-from utils import interval, filter_index
+from utils import interval, filter_index, csv_reader_utf8
 
 
 TRAIN_FILENAME = 'train.npy'
 TEST_FILENAME = 'test.npy'
+
+
+def load_names():
+    csv = csv_reader_utf8("desc.csv")
+    for row in csv:
+        break
+    return [row[1] for row in csv]
 
 
 class DataSet(object):
@@ -29,12 +36,16 @@ class DataSet(object):
         return self.data[:, 155:-1]
 
     @property
+    def features_no_ingre_prob_indexes(self):
+        return interval(155, 230) + interval(254, len(self.data[0]) - 2)
+
+    @property
     def features_no_ingre_prob(self):
         """
         :return: Features without ingredients and without the optional problems.
         """
-        indexes = interval(155, 230) + interval(254, len(self.data[0]) - 2)
-        return self.data[:, indexes]
+
+        return self.data[:, self.features_no_ingre_prob_indexes]
 
     @property
     def features_oo_only(self):
