@@ -26,6 +26,13 @@ def norm(features):
     return preprocessing.scale(features)
 
 
+def mse(arr1, arr2):
+    sum = 0
+    for a, b in zip(arr1, arr2):
+        sum += (a - b) ** 2
+    return sum
+
+
 def collapse_whitespace(s):
     return COLLAPSE_WHITESPACE_RE.sub(' ', s)
 
