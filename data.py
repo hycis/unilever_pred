@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import numpy as np
 
-import cluster
 from utils import interval, filter_index
 
 
