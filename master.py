@@ -85,7 +85,7 @@ def main():
         {
             "model": svm.SVR,
             "params": [
-                {"kernel": "linear"},
+                #{"kernel": "linear"},
                 {"kernel": "rbf"},
             ],
         },
@@ -100,6 +100,7 @@ def main():
         {
             "model": linear_model.LinearRegression,
             "params": [
+                {},
             ],
         },
         {
