@@ -12,8 +12,8 @@ TEST_FILENAME = 'test.npy'
 class DataSet(object):
     def __init__(self, filename):
         self.data = data = np.load(filename)
-        self.ids = map(lambda x: int(round(x)), data[:, 0]) # first column
-        self.prod_ids = map(lambda x: int(round(x)), data[:, 1])
+        self.ids = np.array(map(lambda x: int(round(x)), data[:, 0])) # first column
+        self.prod_ids = np.array(map(lambda x: int(round(x)), data[:, 1]))
         self.unique_prod_ids = set(self.prod_ids)
         self.labels = data[:, -1] # last column
         self.features = data[:, 2:-1] # exclude first 2 and last columns

@@ -2,10 +2,12 @@
 
 from __future__ import unicode_literals
 
+import numpy as np
+
 import csv as csv_mod
 
 from data import DataSet, TEST_FILENAME, TRAIN_FILENAME
-from utils import filter_index, csv_reader_utf8
+from utils import filter_index, csv_reader_utf8, interval
 
 
 def distance(mask1, mask2):
@@ -21,9 +23,11 @@ def bits(mask):
 
 
 def calc(dataset, prod_masks):
+    feature_indexes = interval(158, 228) + interval(277, 287) + interval(289, 293) + interval(295, 296) + interval(299, 300)
     for prod_id in dataset.unique_prod_ids:
         prod_indexes = dataset.get_prod_indexes(prod_id)
-        prod_rows = dataset.data[prod_indexes, 158:229]
+        prod_rows = dataset.data[prod_indexes, :]
+        prod_rows = prod_rows[:, feature_indexes]
         prod_mask = [0] * len(prod_rows[0])
         for row in prod_rows:
             i = 0
