@@ -222,7 +222,7 @@ def main():
                             ens_out_filename = get_filename(ensemble_model.__name__, ensemble_params, "").replace(".csv", "_")
                             out_filename = ens_out_filename + get_filename(fn_name, params, out_suffix)
                             write_pred(out_filename, out_test_ids, out_preds)
-                            train_preds = clf.predict(train_features)
+                            train_preds = clf2.predict(train_features)
                             this_mse = mse(train.labels, train_preds)
                             scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
                             train_log.write(scoreline)
