@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
 
-from data import DataSet, TRAIN_FILENAME, TEST_FILENAME
+from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, load_names
 from cluster import compute_clusters, get_non_na_only
 from utils import write_pred, filter_index, mse
 
@@ -75,6 +75,12 @@ def do_cluster(modelcls, **kwargs):
     return out_test_ids, out_preds, None
 
 
+def log(file, line):
+    file.write(line + "\n")
+    file.flush()
+    print(line)
+
+
 def main():
     import sys
     train = DataSet(TRAIN_FILENAME)
@@ -136,9 +142,10 @@ def main():
     train_log.write(SEP)
 
     overall = []
+    out_suffixes = [""] * 3
 
     for dataset in [0, 1]:
-        out_suffix = ("norm", "neutral")[dataset]
+        out_suffixes[0] = ("norm", "neutral")[dataset]
 
         for fset in fsets:
             print("Feature set={}".format(fset))
@@ -148,10 +155,11 @@ def main():
             else:
                 train_features = getattr(train, 'features' + fset)
                 test_features = getattr(test, 'features' + fset)
-            out_suffix += "_" + fset
+            out_suffixes[1] = fset
+
 
             for to_scale in [0, 1]:
-                out_suffix += "_scaled" if to_scale else ""
+                out_suffixes[2] = "scaled" if to_scale else ""
                 for model in models:
                     modelcls = model['model']
                     modelparams = model['params']
@@ -159,24 +167,23 @@ def main():
                         np.random.seed(123)
                         params = str_params(params)
                         fn_name = modelcls.__name__
-                        print("{}: training with params={} ...".format(fn_name, params))
+                        log(train_log, "{}: training with params={} ...".format(fn_name, params))
                         clf = modelcls(**params)
                         clf.fit(train_features, train.labels)
                         out_preds = clf.predict(test_features)
                         out_test_ids = test.ids
+                        out_suffix = ",".join(out_suffixes)
                         out_filename = get_filename(fn_name, params, out_suffix)
                         write_pred(out_filename, out_test_ids, out_preds)
                         train_preds = clf.predict(train_features)
                         this_mse = mse(train.labels, train_preds)
                         scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                        train_log.write(scoreline)
-                        train_log.flush()
-                        print(scoreline)
+                        log(train_log, scoreline)
                         overall.append({"mse": this_mse, "filename": out_filename})
                         if modelcls == tree.DecisionTreeRegressor:
                             tree.export_graphviz(clf, out_file=out_filename.replace(".csv", ".dot"))
 
-                        print("{}: CV with params={} ...".format(fn_name, params))
+                        log(train_log, "{}: CV with params={} ...".format(fn_name, params))
                         np.random.seed(123)
                         clf = modelcls(**params)
                         scores = cross_validation.cross_val_score(clf, train_features, train.labels,
@@ -190,9 +197,7 @@ def main():
                         this_mse = mse(train.labels, train_preds)
                         """
                         scoreline = "{}: mean={:.4f} std={:.4f}\n".format(fn_name, scores.mean(), scores.std())
-                        train_log.write(scoreline)
-                        train_log.flush()
-                        print(scoreline)
+                        log(train_log, scoreline)
                         #overall.append({"mse": this_mse, "filename": out_filename})
 
                         args = {
@@ -234,13 +239,11 @@ def main():
                                 train_preds = clf2.predict(train_features)
                                 this_mse = mse(train.labels, train_preds)
                                 scoreline = "{}: mse={:.4f}\n".format(fn_name, this_mse)
-                                train_log.write(scoreline)
-                                train_log.flush()
-                                print(scoreline)
+                                log(train_log, scoreline)
                                 overall.append({"mse": this_mse, "filename": out_filename})
-
                 train_features = preprocessing.scale(train_features)
                 test_features = preprocessing.scale(test_features)
+
         train = DataSet("train_neutral.npy")
         test = DataSet("test_neutral.npy")
 
