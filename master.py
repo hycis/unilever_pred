@@ -243,11 +243,15 @@ def test():
     for nfeat in xrange(min(100, len(bestidxes)) + 1, 10, -10):
         feat_idxes = bestidxes[:nfeat]
         for params in param_set:
+            np.random.seed(123)
             clf = getattr(ensemble, model)(**params)
+            clf.fit(final_train_features[:, feat_idxes], final_train_labels)
             out_preds = clf.predict(test.features[:, feat_idxes])
             out_test_ids = test.ids
             out_filename = get_filename(model, params, str(nfeat))
             write_pred(out_filename, out_test_ids, out_preds)
+            np.random.seed(123)
+            clf = getattr(ensemble, model)(**params)
             scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
                                                       cv=5, scoring='mean_squared_error')
             line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
