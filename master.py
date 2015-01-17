@@ -225,6 +225,8 @@ def test():
     train_log.flush()
 
     for (lbl, size) in label_sizes.iteritems():
+        if size == max_size:
+            continue
         idxes = filter_index(train.labels, lambda x: x == lbl)
         feats = train.features_no_ingre_prob[idxes, :]
         n_samples = max_size - size
