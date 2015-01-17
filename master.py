@@ -210,8 +210,9 @@ def test():
     bestidxes = list(np.argsort(sel.scores_))
     bestidxes.reverse()
 
-    param_set = [{"n_estimators": p[0], "max_depth": p[1]}
-                 for p in itertools.product(xrange(50, 200, 40), xrange(5, 15, 5))]
+    #param_set = [{"n_estimators": p[0], "max_depth": p[1]}
+    #             for p in itertools.product(xrange(50, 200, 40), xrange(5, 15, 5))]
+    param_set = [{}]
 
     label_sizes = train.get_label_sizes()
     max_size = max(label_sizes.values())
@@ -237,16 +238,20 @@ def test():
 
     overall = []
 
-    for nfeat in xrange(10, min(50, len(bestidxes)) + 1, 10):
+    for nfeat in xrange(min(100, len(bestidxes)) + 1, 10, -10):
         feat_idxes = bestidxes[:nfeat]
         for params in param_set:
             clf = ensemble.GradientBoostingRegressor(**params)
+            out_preds = clf.predict(test.features[:, feat_idxes])
+            out_test_ids = test.ids
+            out_filename = get_filename("GBR", params, str(nfeat))
+            write_pred(out_filename, out_test_ids, out_preds)
             scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
                                                       cv=5, scoring='mean_squared_error')
             line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
             log(train_log, line)
             overall.append({
-                "mse": scores.mean(),
+                "mse": abs(scores.mean()),
                 "std": scores.std(),
                 "params": params,
                 "nfeat": nfeat,
@@ -257,6 +262,7 @@ def test():
     for a in overall:
         train_log.write("{:.4f}: std={:.4f}, params={}, nfeat={}\n".format(
             a['mse'], a['std'], a['params'], a['nfeat']))
+
     train_log.flush()
 
 

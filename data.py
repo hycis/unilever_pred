@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import numpy as np
 
+import random
+
 from utils import interval, filter_index, csv_reader_utf8
 
 
@@ -64,6 +66,26 @@ class DataSet(object):
         return self.data[:, indexes]
 
 
+def count_unique(feats):
+    counts = []
+    for i in xrange(0, len(feats[0])):
+        counts[i] = {}
+    for row in feats:
+        for i in xrange(0, len(feats[0])):
+            counts[i][row[i]] = counts[i].get(row[i], 0) + 1
+    return counts
+
+
+def _create(lst, total):
+    def a(i):
+        r = random.randint(0, total - 1)
+        for p in lst:
+            if r < p[1]:
+                return p[0]
+        raise Exception("invalid")
+    return a
+
+
 def gen_fake(feats, n_samples):
     """
     :param feats: Rows of features for a specific label.
@@ -74,11 +96,26 @@ def gen_fake(feats, n_samples):
         if std[i] < 0.00001:
             std[i] = 0.000001
     avg = np.average(feats, axis=0)
+
+    counts = count_unique(feats)
+    for i in xrange(0, len(counts)):
+
+        if len(counts[i]) > 10:
+            counts[i] = lambda i: (np.random.normal(loc=avg[i], scale=std[i]))
+            continue
+        lst = []
+        accu = 0
+        for (k, v) in counts[i].iteritems():
+            accu += v
+            lst.append((k, accu))
+        counts[i] = _create(lst, accu)
+
+
     rows = []
     for i in xrange(0, n_samples):
         row = [0] * len(feats[0])
         rows.append(row)
         for j in xrange(0, len(row)):
-            row[j] = (np.random.normal(loc=avg[j], scale=std[j]))
+            row[j] = counts[j]
 
     return np.array(rows)
