@@ -243,7 +243,7 @@ def test():
             clf = ensemble.GradientBoostingRegressor(**params)
             scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
                                                       cv=5, scoring='mean_squared_error')
-            line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean, scores.std(), nfeat, params)
+            line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
             log(train_log, line)
             overall.append({
                 "mse": scores.mean(),
