@@ -28,6 +28,14 @@ class DataSet(object):
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
 
+    def get_label_sizes(self):
+        sizes = {}
+        for lbl in set(self.labels):
+            sizes[lbl] = 0
+        for lbl in self.labels:
+            sizes[lbl] += 1
+        return sizes
+
     @property
     def features_no_ingre(self):
         """
@@ -55,3 +63,19 @@ class DataSet(object):
         indexes = interval(155, 161) + [216, 277, 278, 287, 288, 293]
         return self.data[:, indexes]
 
+
+def gen_fake(feats, n_samples):
+    """
+    :param feats: Rows of features for a specific label.
+    :return:
+    """
+    std = np.std(feats, axis=0)
+    avg = np.average(feats, axis=0)
+    rows = []
+    for i in xrange(0, n_samples):
+        row = [0] * len(feats[0])
+        rows.append(row)
+        for j in xrange(0, len(row)):
+            row[j] = (np.random.normal(loc=avg[j], scale=std[j]))
+
+    return np.array(rows)
