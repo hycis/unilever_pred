@@ -69,7 +69,7 @@ class DataSet(object):
 def count_unique(feats):
     counts = []
     for i in xrange(0, len(feats[0])):
-        counts[i] = {}
+        counts.append({})
     for row in feats:
         for i in xrange(0, len(feats[0])):
             counts[i][row[i]] = counts[i].get(row[i], 0) + 1
@@ -97,18 +97,17 @@ def gen_fake(feats, n_samples):
             std[i] = 0.000001
     avg = np.average(feats, axis=0)
 
-    counts = count_unique(feats)
-    for i in xrange(0, len(counts)):
-
-        if len(counts[i]) > 10:
-            counts[i] = lambda i: (np.random.normal(loc=avg[i], scale=std[i]))
+    gen_random = count_unique(feats)
+    for i in xrange(0, len(gen_random)):
+        if len(gen_random[i]) > 10:
+            gen_random[i] = lambda i: (np.random.normal(loc=avg[i], scale=std[i]))
             continue
         lst = []
         accu = 0
-        for (k, v) in counts[i].iteritems():
+        for (k, v) in gen_random[i].iteritems():
             accu += v
             lst.append((k, accu))
-        counts[i] = _create(lst, accu)
+        gen_random[i] = _create(lst, accu)
 
 
     rows = []
@@ -116,6 +115,6 @@ def gen_fake(feats, n_samples):
         row = [0] * len(feats[0])
         rows.append(row)
         for j in xrange(0, len(row)):
-            row[j] = counts[j]
+            row[j] = gen_random[j](j)
 
     return np.array(rows)

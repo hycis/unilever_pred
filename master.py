@@ -218,7 +218,10 @@ def test():
     final_train_features = train.features_no_ingre_prob
     final_train_labels = train.labels
 
-    train_log = open("test.log", "w+")
+    import sys
+    model = sys.argv[2]
+
+    train_log = open("test-" + model + ".log", "w+")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
@@ -240,10 +243,10 @@ def test():
     for nfeat in xrange(min(100, len(bestidxes)) + 1, 10, -10):
         feat_idxes = bestidxes[:nfeat]
         for params in param_set:
-            clf = ensemble.ExtraTreesRegressor(**params)
+            clf = getattr(ensemble, model)(**params)
             out_preds = clf.predict(test.features[:, feat_idxes])
             out_test_ids = test.ids
-            out_filename = get_filename("GBR", params, str(nfeat))
+            out_filename = get_filename(model, params, str(nfeat))
             write_pred(out_filename, out_test_ids, out_preds)
             scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
                                                       cv=5, scoring='mean_squared_error')
