@@ -211,7 +211,7 @@ def test():
     bestidxes.reverse()
 
     param_set = [{"n_estimators": p[0], "max_depth": p[1]}
-                 for p in itertools.product(xrange(50, 200, 40), xrange(5, 15, 5))],
+                 for p in itertools.product(xrange(50, 200, 40), xrange(5, 15, 5))]
 
     label_sizes = train.get_label_sizes()
     max_size = max(label_sizes.values())
