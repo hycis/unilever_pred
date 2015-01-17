@@ -70,6 +70,9 @@ def gen_fake(feats, n_samples):
     :return:
     """
     std = np.std(feats, axis=0)
+    for i in xrange(0, len(std)):
+        if std[i] < 0.00001:
+            std[i] = 0.000001
     avg = np.average(feats, axis=0)
     rows = []
     for i in xrange(0, n_samples):
