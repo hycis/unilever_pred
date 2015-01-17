@@ -7,8 +7,11 @@ import itertools
 import datetime
 import numpy as np
 from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
+from sklearn.datasets import load_iris
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
 
-from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, load_names
+from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, load_names, gen_fake
 from cluster import compute_clusters, get_non_na_only
 from utils import write_pred, filter_index, mse
 
@@ -198,6 +201,63 @@ def perform(actual, dataset, fsets, non_na_indexes, models, clusters, train_log,
                         })
 
 
+def test():
+    train = DataSet("train_neutral.npy")
+    test = DataSet("test_neutral.npy")
+    sel = SelectKBest(chi2, k=2)
+    sel.fit(train.features_no_ingre_prob, train.labels)
+
+    bestidxes = list(np.argsort(sel.scores_))
+    bestidxes.reverse()
+
+    param_set = [{"n_estimators": p[0], "max_depth": p[1]}
+                 for p in itertools.product(xrange(50, 200, 40), xrange(5, 15, 5))],
+
+    label_sizes = train.get_label_sizes()
+    max_size = max(label_sizes.values())
+    final_train_features = train.features_no_ingre_prob
+    final_train_labels = train.labels
+
+    train_log = open("test.log", "w+")
+    train_log.write(SEP)
+    train_log.write(str(datetime.datetime.now()) + "\n")
+    train_log.write(SEP)
+    train_log.flush()
+
+    for (lbl, size) in label_sizes.iteritems():
+        idxes = filter_index(train.labels, lambda x: x == lbl)
+        feats = train.features_no_ingre_prob[idxes, :]
+        n_samples = max_size - size
+        fake = gen_fake(feats, max_size - size)
+        final_train_features = np.concatenate((final_train_features, fake))
+        final_train_labels = np.concatenate((final_train_labels, [lbl] * n_samples))
+        log(train_log, "lbl={} n_samples={}".format(lbl, n_samples))
+
+    overall = []
+
+    for nfeat in xrange(10, min(50, len(bestidxes)) + 1, 10):
+        feat_idxes = bestidxes[:nfeat]
+        for params in param_set:
+            clf = ensemble.GradientBoostingRegressor(**params)
+            scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
+                                                      cv=5, scoring='mean_squared_error')
+            line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean, scores.std(), nfeat, params)
+            log(train_log, line)
+            overall.append({
+                "mse": scores.mean(),
+                "std": scores.std(),
+                "params": params,
+                "nfeat": nfeat,
+            })
+
+    overall = sorted(overall, key=lambda a: (a['mse'], a['std']))
+    train_log.write(SEP)
+    for a in overall:
+        train_log.write("{:.4f}: std={:.4f}, params={}, nfeat={}\n".format(
+            a['mse'], a['std'], a['params'], a['nfeat']))
+    train_log.flush()
+
+
 def main():
     import sys
     train = DataSet(TRAIN_FILENAME)
@@ -293,4 +353,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if sys.argv[1] == 'test':
+        test()
+    else:
+        main()
