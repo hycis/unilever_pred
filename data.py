@@ -58,11 +58,15 @@ class DataSet(object):
         return self.data[:, self.features_no_ingre_prob_indexes]
 
     @property
+    def features_oo_only_indexes(self):
+        return interval(155, 161) + [216, 277, 278, 287, 288, 293]
+
+    @property
     def features_oo_only(self):
         """
         :return: overall opinion only
         """
-        indexes = interval(155, 161) + [216, 277, 278, 287, 288, 293]
+        indexes = self.features_oo_only_indexes
         return self.data[:, indexes]
 
 
