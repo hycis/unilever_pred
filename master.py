@@ -236,6 +236,7 @@ def test(args):
     train_log.flush()
 
     if args.balance:
+        balanced_suffix = "balance_"
         for (lbl, size) in label_sizes.iteritems():
             if size == max_size:
                 continue
@@ -246,6 +247,8 @@ def test(args):
             final_train_features = np.concatenate((final_train_features, fake))
             final_train_labels = np.concatenate((final_train_labels, [lbl] * n_samples))
             log(train_log, "lbl={} n_samples={}".format(lbl, n_samples))
+    else:
+        balanced_suffix = ""
 
     overall = []
 
@@ -257,7 +260,7 @@ def test(args):
             clf.fit(final_train_features[:, feat_idxes], final_train_labels)
             out_preds = clf.predict(getattr(test, feat_name)[:, feat_idxes])
             out_test_ids = test.ids
-            out_filename = get_filename(model, params, dataset + "_" + str(nfeat))
+            out_filename = get_filename(model, params, dataset + "_" + balanced_suffix + str(nfeat))
             write_pred(out_filename, out_test_ids, out_preds)
             np.random.seed(123)
 
