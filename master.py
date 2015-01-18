@@ -2,6 +2,7 @@
 
 # TODO: train svm per product and test using each svm, then avg the score
 
+import argparse
 import itertools
 
 import datetime
@@ -201,27 +202,34 @@ def perform(actual, dataset, fsets, non_na_indexes, models, clusters, train_log,
                         })
 
 
-def test():
-    train = DataSet("train_neutral.npy")
-    test = DataSet("test_neutral.npy")
+def test(args):
+    dataset = args.dataset
+    model = args.model
+    cv = args.cv
+
+    if dataset == "normal":
+        dataset_suffix = ""
+    else:
+        dataset_suffix = "_" + dataset
+
+    train = DataSet("train" + dataset_suffix + ".npy")
+    test = DataSet("test" + dataset_suffix + ".npy")
     sel = SelectKBest(chi2, k=2)
-    sel.fit(train.features_no_ingre_prob, train.labels)
+    feat_name = args.feature or 'features_no_ingre_prob'
+    sel.fit(getattr(train, feat_name), train.labels)
 
     bestidxes = list(np.argsort(sel.scores_))
     bestidxes.reverse()
 
     param_set = [{"n_estimators": p[0], "max_depth": p[1]}
-                 for p in itertools.product(xrange(100, 141, 20), xrange(5, 6, 5))]
+                 for p in itertools.product(xrange(100, 141, 20), xrange(5, 11, 5))]
 
     label_sizes = train.get_label_sizes()
     max_size = max(label_sizes.values())
-    final_train_features = train.features_no_ingre_prob
+    final_train_features = getattr(train, feat_name)
     final_train_labels = train.labels
 
-    import sys
-    model = sys.argv[2]
-
-    train_log = open("test-" + model + ".log", "w+")
+    train_log = open("test-{}-{}.log".format(model, dataset), "w+")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
@@ -231,7 +239,7 @@ def test():
         if size == max_size:
             continue
         idxes = filter_index(train.labels, lambda x: x == lbl)
-        feats = train.features_no_ingre_prob[idxes, :]
+        feats = getattr(train, feat_name)[idxes, :]
         n_samples = max_size - size
         fake = gen_fake(feats, max_size - size)
         final_train_features = np.concatenate((final_train_features, fake))
@@ -246,22 +254,38 @@ def test():
             np.random.seed(123)
             clf = getattr(ensemble, model)(**params)
             clf.fit(final_train_features[:, feat_idxes], final_train_labels)
-            out_preds = clf.predict(test.features[:, feat_idxes])
+            out_preds = clf.predict(getattr(test, feat_name)[:, feat_idxes])
             out_test_ids = test.ids
             out_filename = get_filename(model, params, str(nfeat))
             write_pred(out_filename, out_test_ids, out_preds)
             np.random.seed(123)
-            clf = getattr(ensemble, model)(**params)
-            scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
-                                                      cv=5, scoring='mean_squared_error')
-            line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
-            log(train_log, line)
-            overall.append({
-                "mse": abs(scores.mean()),
-                "std": scores.std(),
-                "params": params,
-                "nfeat": nfeat,
-            })
+
+            if cv:
+                clf = getattr(ensemble, model)(**params)
+                scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
+                                                          cv=5, scoring='mean_squared_error')
+                line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
+                log(train_log, line)
+                overall.append({
+                    "mse": abs(scores.mean()),
+                    "std": scores.std(),
+                    "params": params,
+                    "nfeat": nfeat,
+                })
+            else:
+                train_preds = clf.predict(final_train_features[:, feat_idxes])
+                diff = (train_preds - final_train_labels) ** 2
+                mse_mean = abs(sum(diff) / len(diff))
+                mse_std = np.std(diff)
+                line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(mse_mean, mse_std, nfeat, params)
+                log(train_log, line)
+                overall.append({
+                    "mse": mse_mean,
+                    "std": mse_std,
+                    "params": params,
+                    "nfeat": nfeat,
+                })
+
 
     overall = sorted(overall, key=lambda a: (a['mse'], a['std']))
     train_log.write(SEP)
@@ -367,8 +391,18 @@ def main():
 
 
 if __name__ == "__main__":
-    import sys
-    if sys.argv[1] == 'test':
-        test()
+    parser = argparse.ArgumentParser(description='learning module.')
+    parser.add_argument("-t", "--test", help="runs the test program",
+                        action="store_true", default=False)
+    parser.add_argument("--cv", help="do cross validation",
+                        action="store_true", default=False)
+    parser.add_argument("-m", "--model", help="model to use", required=True)
+    parser.add_argument("-f", "--feature", help="feature set to use", required=False)
+    parser.add_argument("-d", "--dataset", help="dataset to use",
+                        choices=["interpolated", "neutral", "normal"], required=True)
+    args = parser.parse_args()
+
+    if args.test:
+        test(args)
     else:
         main()
