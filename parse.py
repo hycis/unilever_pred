@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-# TODO: make NA for agree qns neutral
+# TODO: fill in NA with sampled data from each class
+# TODO: sum up the problems
 
 from __future__ import unicode_literals
 
@@ -22,24 +23,35 @@ def parse_bool(s):
     cell = s.lower()
     if cell == 'yes':
         return 1
-    if cell in ('na', 'no', 'none'):
+    if cell in ('no', 'none'):
         return 0
+    if cell == 'na':
+        return -1
     raise Exception("invalid bool: " + cell)
 
 
-def parse_na_or_number(s):
+def parse_number_or_zero(s):
     try:
         return float(s)
     except (ValueError, TypeError):
         return 0
 
 
+def parse_na_or_number(s):
+    try:
+        return float(s)
+    except (ValueError, TypeError):
+        return -1
+
+
 def parse_na_bool_or_number(s):
     s = s.lower()
-    if s in ('na', 'no', 'none'):
+    if s in ('no', 'none'):
         return 0
     if s in ('yes', ):
         return 1
+    if s == 'na':
+        return -1
     return float(s)
 
 
@@ -50,7 +62,7 @@ def parse_identity(s):
 def parse_times_used(s):
     cell = s.lower()
     if cell == 'na':
-        v = 0
+        v = -1
     elif cell == 'everyday':
         v = 30 # arbitrary
     else:
@@ -98,7 +110,7 @@ def parse_how_much(s):
     elif 'whole' in cell or 'fully' in cell:
         v = 1
     elif cell == 'na':
-        v = 0
+        v = -1
     else:
         raise Exception('invalid how much: ' + cell)
     return v
@@ -106,10 +118,12 @@ def parse_how_much(s):
 
 def parse_agree(s):
     cell = s.lower()
+    if cell == 'na':
+        return -1
     m = AGREE_RE.match(cell)
     if not m:
         invalid_agree.add(cell)
-        return 0
+        return -1
     return int(m.group('number'))
 
 
@@ -130,8 +144,10 @@ def parse_soak(s):
         return 8 # arbitrary
     if 'more than 2' in cell or '2 hrs' in cell:
         return 3 # arbitrary
-    if 'not' in cell or cell == 'na':
+    if 'not' in cell:
         return 0
+    if cell == 'na':
+        return -1
     raise Exception("invalid soak: " + cell)
 
 
@@ -145,7 +161,9 @@ def parse_rinse(s):
         return 3
     if cell.startswith('wash'):
         return 4
-    return 0
+    if cell == 'na':
+        return -1
+    raise Exception("invalid rinse: " + cell)
 
 
 def parse_dry(s):
@@ -160,26 +178,31 @@ def parse_dry(s):
         return 3
     if ' sun' in cell:
         return 4
-    return 0
+    if cell == 'na':
+        return -1
+    raise Exception("invalid dry: " + cell)
 
 
 def parse_problem(s):
     cell = s.lower()
-    if cell.startswith('no ') or cell == 'na' or cell == 'no':
+    if cell.startswith('no ') or cell == 'no':
         return 0
+    if cell == 'na':
+        return -1
     return 1
 
 
 def parse_dissolve(s):
+    if '(' in s:
+        return parse_agree(s)
     cell = s.lower()
-    v = parse_agree(s)
-    if v > 0:
-        return v
     if 'quickly' in cell:
         return 4
     if 'completely' in cell or 'both' in cell:
         return 5
-    return 0
+    if cell == 'na':
+        return -1
+    raise Exception("invalid diss: " + cell)
 
 
 def parse_marriage(s):
@@ -192,7 +215,9 @@ def parse_marriage(s):
         return 0
     if cell.startswith('married'):
         return 1
-    return 0
+    if cell == 'na':
+        return -1
+    raise Exception("invalid marriage: " + cell)
 
 
 def read_csv(file_path):
@@ -202,7 +227,7 @@ def read_csv(file_path):
         # product ID
         ([1], lambda s: int(s[2:])),
         # parse ingredients
-        (xrange(2, 155), parse_na_or_number),
+        (xrange(2, 155), parse_number_or_zero),
         ([155, 229], parse_bool),
         ([156], parse_how_much),
         ([157], parse_times_used),
@@ -231,14 +256,14 @@ def read_csv(file_path):
         (xrange(277, 288), parse_agree),
         ([288], parse_dissolve),
         (xrange(289, 294), parse_agree),
-        ([294], lambda s: 0 if s.lower() in ('na', 'no', 'none') else 1),
+        ([294], lambda s: {'none': 0, 'no': 0, 'na': -1}.get(s.lower(), 1)),
         (xrange(295, 297), parse_agree),
         ([297], parse_bool),
         ([298], parse_soak),
         (xrange(299, 301), parse_agree),
 
         # overall opinion
-        ([301], parse_na_or_number),
+        ([301], parse_number_or_zero),
     )
 
     csv = csv_reader_utf8(file_path, dialect=csv_mod.excel)
@@ -268,34 +293,73 @@ def read_csv(file_path):
     return parsed_rows
 
 
+def interpolate_na(data):
+    import random
+    count = len(data[0])
+    random.seed(123)
+
+    for lbl in xrange(1, 8):
+        non_na = []
+
+        for i in xrange(0, count):
+            non_na.append([])
+
+        for row in data:
+            if row[-1] != lbl:
+                continue
+
+            for i in xrange(0, count):
+                if row[i] >= 0:
+                    non_na[i].append(row[i])
+
+        for row in data:
+            if row[-1] != lbl:
+                continue
+
+            for i in xrange(0, count):
+                if row[i] < 0:
+                    row[i] = non_na[i][random.randint(0, len(non_na[i]) - 1)]
+    return data
+
+
 def neutral_na(data):
-    import cluster
-    count = len(cluster.AGREE_INDEXES)
+    count = len(data[0])
     mins = [1e99] * count
     maxs = [-1e99] * count
-    for i in xrange(0, count):
-        idx = cluster.AGREE_INDEXES[i]
-        for rowidx in xrange(0, len(data)):
-            mins[i] = min(mins[i], data[rowidx, idx])
-            maxs[i] = max(maxs[i], data[rowidx, idx])
 
-    for i in xrange(0, count):
-        idx = cluster.AGREE_INDEXES[i]
-        for rowidx in xrange(0, len(data)):
-            if data[rowidx, idx] < .1:
-                data[rowidx, idx] = (mins[i] + maxs[i]) * .5
+    for row in data:
+        for i in xrange(0, count):
+            if row[i] >= 0:
+                mins[i] = min(mins[i], row[i])
+                maxs[i] = max(maxs[i], row[i])
+
+    for row in data:
+        for i in xrange(0, count):
+            if row[i] < 0:
+                row[i] = (mins[i] + maxs[i]) * .5
+
+    return data
+
+
+def make_na_zero(data):
+    for row in data:
+        for i in xrange(0, len(row)):
+            if row[i] < 0:
+                row[i] = 0
     return data
 
 
 if __name__ == '__main__':
     train = np.array(read_csv('train.csv'))
-    # this row has a score of NA (invalid), change to 1.
-    train[6269, -1] = 1
+    # this row has a score of NA (invalid), change to 5.
+    train[6269, -1] = 5
     # Last column is the opinion score 0-7 (label)
-    np.save('train.npy', train)
+    np.save('train.npy', make_na_zero(train))
     np.save('train_neutral.npy', neutral_na(train))
+    np.save('train_interpolated.npy', interpolate_na(train))
 
     sub = np.array(read_csv('sub.csv'))
     # Last column is the test label which is all 0
-    np.save('test.npy', sub)
+    np.save('test.npy', make_na_zero(sub))
     np.save('test_neutral.npy', neutral_na(sub))
+    np.save('test_interpolated.npy', interpolate_na(sub))
