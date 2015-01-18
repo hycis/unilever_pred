@@ -256,7 +256,7 @@ def test(args):
             clf.fit(final_train_features[:, feat_idxes], final_train_labels)
             out_preds = clf.predict(getattr(test, feat_name)[:, feat_idxes])
             out_test_ids = test.ids
-            out_filename = get_filename(model, params, str(nfeat))
+            out_filename = get_filename(model, params, dataset + "_" + str(nfeat))
             write_pred(out_filename, out_test_ids, out_preds)
             np.random.seed(123)
 
