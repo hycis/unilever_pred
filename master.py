@@ -229,14 +229,18 @@ def test(args):
     final_train_features = getattr(train, feat_name)
     final_train_labels = train.labels
 
-    train_log = open("test-{}-{}.log".format(model, dataset), "w+")
+    if args.balance:
+        balanced_suffix = "balance_"
+    else:
+        balanced_suffix = ""
+
+    train_log = open("test-{}-{}-{}.log".format(model, dataset, balanced_suffix), "w+")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
     train_log.flush()
 
     if args.balance:
-        balanced_suffix = "balance_"
         for (lbl, size) in label_sizes.iteritems():
             if size == max_size:
                 continue
@@ -247,8 +251,6 @@ def test(args):
             final_train_features = np.concatenate((final_train_features, fake))
             final_train_labels = np.concatenate((final_train_labels, [lbl] * n_samples))
             log(train_log, "lbl={} n_samples={}".format(lbl, n_samples))
-    else:
-        balanced_suffix = ""
 
     overall = []
 
