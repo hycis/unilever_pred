@@ -313,6 +313,10 @@ def interpolate_na(orig_data):
                 if row[i] >= 0:
                     non_na[i].append(row[i])
 
+        for i in xrange(0, count):
+            if not non_na[i]:
+                non_na[i].append(0)
+
         for row in data:
             if row[-1] != lbl:
                 continue
