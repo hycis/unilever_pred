@@ -235,16 +235,17 @@ def test(args):
     train_log.write(SEP)
     train_log.flush()
 
-    for (lbl, size) in label_sizes.iteritems():
-        if size == max_size:
-            continue
-        idxes = filter_index(train.labels, lambda x: x == lbl)
-        feats = getattr(train, feat_name)[idxes, :]
-        n_samples = max_size - size
-        fake = gen_fake(feats, max_size - size)
-        final_train_features = np.concatenate((final_train_features, fake))
-        final_train_labels = np.concatenate((final_train_labels, [lbl] * n_samples))
-        log(train_log, "lbl={} n_samples={}".format(lbl, n_samples))
+    if args.balance:
+        for (lbl, size) in label_sizes.iteritems():
+            if size == max_size:
+                continue
+            idxes = filter_index(train.labels, lambda x: x == lbl)
+            feats = getattr(train, feat_name)[idxes, :]
+            n_samples = max_size - size
+            fake = gen_fake(feats, max_size - size)
+            final_train_features = np.concatenate((final_train_features, fake))
+            final_train_labels = np.concatenate((final_train_labels, [lbl] * n_samples))
+            log(train_log, "lbl={} n_samples={}".format(lbl, n_samples))
 
     overall = []
 
@@ -395,6 +396,8 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--test", help="runs the test program",
                         action="store_true", default=False)
     parser.add_argument("--cv", help="do cross validation",
+                        action="store_true", default=False)
+    parser.add_argument("--balance", help="balance",
                         action="store_true", default=False)
     parser.add_argument("-m", "--model", help="model to use", required=True)
     parser.add_argument("-f", "--feature", help="feature set to use", required=False)
