@@ -293,7 +293,8 @@ def read_csv(file_path):
     return parsed_rows
 
 
-def interpolate_na(data):
+def interpolate_na(orig_data):
+    data = np.copy(orig_data)
     import random
     count = len(data[0])
     random.seed(123)
@@ -322,7 +323,8 @@ def interpolate_na(data):
     return data
 
 
-def neutral_na(data):
+def neutral_na(orig_data):
+    data = np.copy(orig_data)
     count = len(data[0])
     mins = [1e99] * count
     maxs = [-1e99] * count
@@ -341,7 +343,8 @@ def neutral_na(data):
     return data
 
 
-def make_na_zero(data):
+def make_na_zero(orig_data):
+    data = np.copy(orig_data)
     for row in data:
         for i in xrange(0, len(row)):
             if row[i] < 0:
