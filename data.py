@@ -31,6 +31,13 @@ def _to_int(a):
 
 
 class DataSet(object):
+    AVG_INDEX_LIST = [
+        xinterval(195, 204), # smell
+        xinterval(205, 214), # strength of smell
+        xinterval(230, 241), # problems
+        xinterval(242, 253), # problems additional
+    ]
+
     def __init__(self, filename=None, data=None):
         if data is not None:
             self.data = data
@@ -114,6 +121,25 @@ class DataSet(object):
         indexes = self.features_oo_only_indexes
         return self.data[:, indexes]
 
+    @property
+    def features_avg(self):
+        leftover_idxes = set(interval(2, len(self.data[0])-2)) - set(itertools.chain(self.AVG_INDEX_LIST))
+        leftover_count = len(leftover_idxes)
+        new = np.empty((len(self.data), len(self.AVG_INDEX_LIST) + len(leftover_idxes)))
+        new[:, 0:leftover_count] = self.data[:, leftover_idxes]
+
+        for rowidx in xrange(0, len(self.data)):
+            rangeidx = leftover_count
+            for therange in self.AVG_INDEX_LIST:
+                non_na = filter(lambda x: x >= 0, self.data[rowidx, therange])
+                if non_na:
+                    avg = sum(non_na) / float(len(non_na))
+                else:
+                    avg = 0
+                new[rowidx, rangeidx] = avg
+                rangeidx += 1
+        return new
+
 
 def count_unique(feats):
     counts = []
@@ -167,3 +193,5 @@ def gen_fake(feats, n_samples):
             row[j] = gen_random[j](j)
 
     return np.array(rows)
+
+
