@@ -1,20 +1,19 @@
 #!/usr/bin/env python
 
-# TODO: train svm per product and test using each svm, then avg the score
-
 import argparse
 import itertools
 
 import datetime
 import numpy as np
+import sklearn
 from sklearn import svm, preprocessing, cross_validation, linear_model, ensemble, tree
 from sklearn.datasets import load_iris
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 
-from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, load_names, gen_fake
+from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, TRAIN_RAW_FILENAME, TEST_RAW_FILENAME, load_names, gen_fake
 from cluster import compute_clusters, get_non_na_only
-from utils import write_pred, filter_index, mse
+from utils import write_pred, filter_index, mse, drange
 
 
 SEP = "=" * 80 + "\n"
@@ -202,50 +201,82 @@ def perform(actual, dataset, fsets, non_na_indexes, models, clusters, train_log,
                         })
 
 
-def test(args):
-    dataset = args.dataset
-    model = args.model
-    cv = args.cv
+def param_set(param_specs):
+    param_names = []
+    param_ranges = []
+    for p in param_specs:
+        name, specs = p.split('=')
+        typ = float if '.' in specs else int
+        param_names.append(name.strip())
+        specs = map(str.strip, specs.split(','))
+        specs = map(typ, specs)
+        param_ranges.append(drange(*specs))
 
-    if dataset == "normal":
-        dataset_suffix = ""
-    else:
-        dataset_suffix = "_" + dataset
+    for params in itertools.product(*param_ranges):
+        param_set = dict(zip(param_names, params))
+        yield param_set
 
-    train = DataSet("train" + dataset_suffix + ".npy")
-    test = DataSet("test" + dataset_suffix + ".npy")
+
+def get_class(class_path):
+    if '.' not in class_path:
+        for p2 in ('ensemble', 'tree', 'svm'):
+            pp = getattr(getattr(sklearn, p2), class_path)
+            if pp:
+                return pp
+        return None
+    parts = class_path.split('.')
+    cur = sklearn
+    for p in parts:
+        cur = getattr(cur, p)
+    return cur
+
+
+def main(args):
+    suffixes = [
+        args.transform,
+        args.feature,
+        'bal' if args.balance else '',
+    ]
+    file_suffix = ",".join(suffixes)
+    model_cls = get_class(args.model)
+    model_name = model_cls.__name__
+
+    train = DataSet(TRAIN_RAW_FILENAME)
+    test = DataSet(TEST_RAW_FILENAME)
+
+    getattr(train, 'transform_' + args.transform)()
+    getattr(test, 'transform_' + args.transform)()
+
+    train_features = getattr(train, 'features_' + args.feature)
+    test_features = getattr(test, 'features_' + args.feature)
+
+    """
     sel = SelectKBest(chi2, k=2)
     feat_name = args.feature or 'features_no_ingre_prob'
     sel.fit(getattr(train, feat_name), train.labels)
 
     bestidxes = list(np.argsort(sel.scores_))
     bestidxes.reverse()
+    """
 
-    param_set = [{"n_estimators": p[0], "max_depth": p[1]}
-                 for p in itertools.product(xrange(100, 141, 20), xrange(5, 11, 5))]
 
-    label_sizes = train.get_label_sizes()
-    max_size = max(label_sizes.values())
-    final_train_features = getattr(train, feat_name)
-    final_train_labels = train.labels
-
-    if args.balance:
-        balanced_suffix = "balance_"
-    else:
-        balanced_suffix = ""
-
-    train_log = open("test-{}-{}-{}.log".format(model, dataset, balanced_suffix), "w+")
+    train_log = open("{}-{}.log".format(model_name, file_suffix), "w+")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
     train_log.flush()
 
+    final_train_features = train_features
+    final_train_labels = train.labels
+
     if args.balance:
+        label_sizes = train.get_label_sizes()
+        max_size = max(label_sizes.values())
         for (lbl, size) in label_sizes.iteritems():
             if size == max_size:
                 continue
             idxes = filter_index(train.labels, lambda x: x == lbl)
-            feats = getattr(train, feat_name)[idxes, :]
+            feats = train_features[idxes, :]
             n_samples = max_size - size
             fake = gen_fake(feats, max_size - size)
             final_train_features = np.concatenate((final_train_features, fake))
@@ -254,55 +285,50 @@ def test(args):
 
     overall = []
 
-    for nfeat in xrange(min(100, len(bestidxes)) + 1, 10, -10):
-        feat_idxes = bestidxes[:nfeat]
-        for params in param_set:
-            np.random.seed(123)
-            clf = getattr(ensemble, model)(**params)
-            clf.fit(final_train_features[:, feat_idxes], final_train_labels)
-            out_preds = clf.predict(getattr(test, feat_name)[:, feat_idxes])
-            out_test_ids = test.ids
-            out_filename = get_filename(model, params, dataset + "_" + balanced_suffix + str(nfeat))
-            write_pred(out_filename, out_test_ids, out_preds)
-            np.random.seed(123)
+    #for nfeat in xrange(min(100, len(bestidxes)) + 1, 10, -10):
 
-            if cv:
-                clf = getattr(ensemble, model)(**params)
-                scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
-                                                          cv=5, scoring='mean_squared_error')
-                line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(scores.mean(), scores.std(), nfeat, params)
-                log(train_log, line)
-                overall.append({
-                    "mse": abs(scores.mean()),
-                    "std": scores.std(),
-                    "params": params,
-                    "nfeat": nfeat,
-                })
-            else:
-                train_preds = clf.predict(final_train_features[:, feat_idxes])
-                diff = (train_preds - final_train_labels) ** 2
-                mse_mean = abs(sum(diff) / len(diff))
-                mse_std = np.std(diff)
-                line = "mean={:.4f} std={:.4f} nfeat={} params={}".format(mse_mean, mse_std, nfeat, params)
-                log(train_log, line)
-                overall.append({
-                    "mse": mse_mean,
-                    "std": mse_std,
-                    "params": params,
-                    "nfeat": nfeat,
-                })
+    for params in param_set(args.param):
+        np.random.seed(123)
+        clf = model_cls(**params)
+        # feat_idxes = bestidxes[:nfeat]
+        feat_idxes = xrange(0, len(final_train_features[0]))
 
+        clf.fit(final_train_features[:, feat_idxes], final_train_labels)
+        out_preds = clf.predict(test_features[:, feat_idxes])
+        out_test_ids = test.ids
+        out_filename = get_filename(model_name, params, file_suffix)
+        write_pred(out_filename, out_test_ids, out_preds)
+
+        np.random.seed(123)
+        if args.cv:
+            clf = model_cls(**params)
+            scores = cross_validation.cross_val_score(clf, final_train_features[:, feat_idxes], final_train_labels,
+                                                      cv=5, scoring='mean_squared_error')
+            mse_mean = scores.mean()
+            mse_std = scores.std()
+        else:
+            train_preds = clf.predict(final_train_features[:, feat_idxes])
+            diff = (train_preds - final_train_labels) ** 2
+            mse_mean = abs(sum(diff) / len(diff))
+            mse_std = np.std(diff)
+
+        line = "mean={:.4f} std={:.4f} params={}".format(mse_mean, mse_std, params)
+        log(train_log, line)
+        overall.append({
+            "mse": mse_mean,
+            "std": mse_std,
+            "params": params,
+        })
 
     overall = sorted(overall, key=lambda a: (a['mse'], a['std']))
     train_log.write(SEP)
     for a in overall:
-        train_log.write("{:.4f}: std={:.4f}, params={}, nfeat={}\n".format(
-            a['mse'], a['std'], a['params'], a['nfeat']))
-
+        train_log.write("{:.4f}: std={:.4f}, params={}\n".format(
+            a['mse'], a['std'], a['params'],))
     train_log.flush()
 
 
-def main():
+def main2():
     import sys
     train = DataSet(TRAIN_FILENAME)
     test = DataSet(TEST_FILENAME)
@@ -398,19 +424,14 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='learning module.')
-    parser.add_argument("-t", "--test", help="runs the test program",
-                        action="store_true", default=False)
+    parser.add_argument("-t", "--transform", help="feature transformation", required=True)
+    parser.add_argument("-f", "--feature", help="feature set to use", required=True)
+    parser.add_argument("-m", "--model", help="model to use", required=True)
+    parser.add_argument('-p', '--param', help="model param: param_name=start,end,step", nargs='+')
     parser.add_argument("--cv", help="do cross validation",
                         action="store_true", default=False)
     parser.add_argument("--balance", help="balance",
                         action="store_true", default=False)
-    parser.add_argument("-m", "--model", help="model to use", required=True)
-    parser.add_argument("-f", "--feature", help="feature set to use", required=False)
-    parser.add_argument("-d", "--dataset", help="dataset to use",
-                        choices=["interpolated", "neutral", "normal"], required=True)
     args = parser.parse_args()
+    main(args)
 
-    if args.test:
-        test(args)
-    else:
-        main()
