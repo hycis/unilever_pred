@@ -13,8 +13,6 @@ import re
 import numpy as np
 
 from utils import csv_reader_utf8, is_float
-import data
-from data import DataSet
 
 AGREE_RE = re.compile(r'^.*?\((?P<number>\d+)\)$')
 FIRST_NUMBER_RE = re.compile(r'(?P<number>\d+)')
@@ -224,6 +222,58 @@ def parse_marriage(s):
     raise Exception("invalid marriage: " + cell)
 
 
+def parse_exp(s):
+    cell = s.lower().replace('  ', ' ').strip()
+    if cell == 'a little better than i expected (2)':
+        return 4
+    if cell == 'much better than i expected (1)':
+        return 5
+    return parse_agree(cell)
+
+
+def parse_flow(s):
+    cell = s.lower().replace('  ', ' ')
+    if 'ease' in cell:
+        if 'very poor' in cell:
+            return 1
+        if 'somewhat poor' in cell:
+            return 1 + 1/4. * 6.
+        if 'right' in cell:
+            return 1 + 2/4. * 6.
+        if 'somewhat good' in cell:
+            return 1 + 3/4. * 6.
+        if 'very good' in cell:
+            return 1 + 4/4. * 6
+        raise Exception("invalid flow: " + cell)
+    return parse_agree(cell)
+
+
+def parse_desire(s):
+    cell = s.lower()
+    v = parse_agree(cell)
+    if 'desire' in cell or 'too' in cell or 'right' in cell:
+        return 1 + (v - 1) / 2. * 6.
+    return v
+
+
+def parse_speckles(s):
+    cell = s.lower()
+    v = parse_agree(cell)
+    if 'liked' in cell:
+        return 1 + (v - 1) / 4. * 6.
+    if 'desire' in cell or 'right' in cell or 'speckle' in cell:
+        return 1 + (v - 1) / 2. * 6.
+    return v
+
+
+def parse_fond_sparkles(s):
+    cell = s.lower()
+    v = parse_agree(cell)
+    if 'liked' in cell:
+        return 1 + (v - 1) / 4. * 6.
+    return 1 + (v - 1) / 2. * 6.
+
+
 SCHEMA = (
     # response ID
     ([0], int),
@@ -234,7 +284,10 @@ SCHEMA = (
     ([155, 229], parse_bool),
     ([156], parse_how_much),
     ([157], parse_times_used),
-    (xrange(158, 229), parse_agree),
+    (xrange(158, 227), parse_agree),
+    ([221, 225], parse_desire),
+    ([227], parse_speckles),
+    ([228], parse_fond_sparkles),
     (xrange(230, 254), parse_problem),
     (xrange(254, 259), parse_na_bool_or_number),
     ([259], parse_soak),
@@ -255,12 +308,13 @@ SCHEMA = (
 
     # occupants
     (xrange(272, 277), parse_na_or_number),
-
-    (xrange(277, 288), parse_agree),
+    ([277], parse_exp),
+    (xrange(278, 288), parse_agree),
     ([288], parse_dissolve),
     (xrange(289, 294), parse_agree),
     ([294], lambda s: {'none': 0, 'no': 0, 'na': -1}.get(s.lower(), 1)),
-    (xrange(295, 297), parse_agree),
+    ([295], parse_flow),
+    (xrange(296, 297), parse_agree),
     ([297], parse_bool),
     ([298], parse_soak),
     (xrange(299, 301), parse_agree),
@@ -302,6 +356,8 @@ def read_csv(file_path):
 
 
 if __name__ == '__main__':
+    import data
+    from data import DataSet
     train_raw = np.array(read_csv('train.csv'))
     # this row has a score of NA (invalid), change to 5.
     train_raw[6269, -1] = 5
