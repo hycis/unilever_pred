@@ -13,6 +13,17 @@ AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
 AGREE_STD_RE = re.compile(r"(?<!\w)(little|much|a|it)(?!\w)", re.I)
 
 
+def drange(start, stop, step):
+    r = start
+    while r <= stop:
+        yield r
+        r += step
+
+
+def xinterval(start, end):
+    return xrange(start, end + 1)
+
+
 def interval(start, end):
     """
     :param start:
