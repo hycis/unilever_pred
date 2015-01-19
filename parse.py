@@ -271,7 +271,9 @@ def parse_fond_sparkles(s):
     v = parse_agree(cell)
     if 'liked' in cell:
         return 1 + (v - 1) / 4. * 6.
-    return 1 + (v - 1) / 2. * 6.
+    if v > 0:
+        return 1 + (v - 1) / 2. * 6.
+    return v
 
 
 SCHEMA = (
