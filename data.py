@@ -74,8 +74,7 @@ class DataSet(object):
             non_na = [
                 filter(lambda x: x >= 0, lbl_data[:, AGREE_INDEXES[i]]) or [0] for i in xrange(0, agree_count)
             ]
-            for rowidx in lbl_idxes:
-                row = lbl_data[rowidx, :]
+            for row in lbl_data:
                 for i in xrange(0, agree_count):
                     idx = AGREE_INDEXES[i]
                     if row[idx] < 0:
