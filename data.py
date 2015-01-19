@@ -32,7 +32,7 @@ def _to_int(a):
 
 class DataSet(object):
     def __init__(self, filename=None, data=None):
-        if data:
+        if data is not None:
             self.data = data
         else:
             self.data = data = np.load(filename)
