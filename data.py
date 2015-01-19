@@ -31,11 +31,17 @@ def _to_int(a):
 
 
 class DataSet(object):
-    AVG_INDEX_LIST = [
+    COMBINED_INDEX_LIST = [
         xinterval(195, 204), # smell
         xinterval(205, 214), # strength of smell
         xinterval(230, 241), # problems
         xinterval(242, 253), # problems additional
+    ]
+    COMBINED_SUM_LIST = [
+        False,
+        False,
+        True,
+        True,
     ]
 
     def __init__(self, filename=None, data=None):
@@ -122,22 +128,27 @@ class DataSet(object):
         return self.data[:, indexes]
 
     @property
-    def features_avg(self):
-        leftover_idxes = set(interval(2, len(self.data[0])-2)) - set(itertools.chain(self.AVG_INDEX_LIST))
+    def features_combined(self):
+        leftover_idxes = set(interval(2, len(self.data[0])-2)) - set(itertools.chain(self.COMBINED_INDEX_LIST))
         leftover_count = len(leftover_idxes)
-        new = np.empty((len(self.data), len(self.AVG_INDEX_LIST) + len(leftover_idxes)))
+        new = np.empty((len(self.data), len(self.COMBINED_INDEX_LIST) + len(leftover_idxes)))
         new[:, 0:leftover_count] = self.data[:, leftover_idxes]
 
         for rowidx in xrange(0, len(self.data)):
             rangeidx = leftover_count
-            for therange in self.AVG_INDEX_LIST:
-                non_na = filter(lambda x: x >= 0, self.data[rowidx, therange])
+            i = 0
+            for therange in self.COMBINED_INDEX_LIST:
+                non_na = filter(lambda x: x > 0, self.data[rowidx, therange])
                 if non_na:
-                    avg = sum(non_na) / float(len(non_na))
+                    if self.COMBINED_SUM_LIST[i]:
+                        avg = sum(non_na)
+                    else:
+                        avg = sum(non_na) / float(len(non_na))
                 else:
-                    avg = 0
+                    avg = 0 # TODO: interpolate this?
                 new[rowidx, rangeidx] = avg
                 rangeidx += 1
+                i += 1
         return new
 
 
