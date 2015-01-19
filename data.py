@@ -1,14 +1,18 @@
 from __future__ import unicode_literals
 
 import numpy as np
+import itertools
 
 import random
 
-from utils import interval, filter_index, csv_reader_utf8
+from parse import AGREE_INDEXES
+from utils import interval, filter_index, csv_reader_utf8, xinterval
 
 
 TRAIN_FILENAME = 'train.npy'
 TEST_FILENAME = 'test.npy'
+TRAIN_RAW_FILENAME = 'train_raw.npy'
+TEST_RAW_FILENAME = 'test_raw.npy'
 
 
 def load_names():
@@ -18,22 +22,35 @@ def load_names():
     return [row[1] for row in csv]
 
 
+def _to_int(a):
+    """
+    Transform to int in-place.
+    """
+    for i in xrange(0, len(a)):
+        a[i] = int(round(a[i]))
+
+
 class DataSet(object):
-    def __init__(self, filename):
-        self.data = data = np.load(filename)
-        self.ids = np.array(map(lambda x: int(round(x)), data[:, 0])) # first column
-        self.prod_ids = np.array(map(lambda x: int(round(x)), data[:, 1]))
-        self.unique_prod_ids = set(self.prod_ids)
+    def __init__(self, filename=None, data=None):
+        if data:
+            self.data = data
+        else:
+            self.data = data = np.load(filename)
+        self.ids = data[:, 0] # first column
+        self.prod_ids = data[:, 1]
         self.labels = data[:, -1] # last column
         self.features = data[:, 2:-1] # exclude first 2 and last columns
+        _to_int(self.ids)
+        _to_int(self.prod_ids)
+        _to_int(self.labels)
+        self.unique_prod_ids = set(self.prod_ids)
+        self.unique_labels = set(self.labels)
 
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
 
     def get_label_sizes(self):
-        sizes = {}
-        for lbl in set(self.labels):
-            sizes[lbl] = 0
+        sizes = {lbl: 0 for lbl in self.unique_labels}
         for lbl in self.labels:
             sizes[lbl] += 1
         return sizes
