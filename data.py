@@ -49,6 +49,34 @@ class DataSet(object):
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
 
+    def transform_na_interpolated(self):
+        """ Interpolate all NA. Transform in-place. """
+        data = self.data
+        agree_count = len(AGREE_INDEXES)
+        random.seed(123)
+
+        for lbl in self.unique_labels:
+            lbl_idxes = filter_index(self.labels, lbl)
+            lbl_data = data[lbl_idxes, :]
+            non_na = [
+                filter(lambda x: x >= 0, lbl_data[:, AGREE_INDEXES[i]]) or [0] for i in xrange(0, agree_count)
+            ]
+            for rowidx in lbl_idxes:
+                row = lbl_data[rowidx, :]
+                for i in xrange(0, agree_count):
+                    idx = AGREE_INDEXES[i]
+                    if row[idx] < 0:
+                        row[idx] = non_na[i][random.randint(0, len(non_na[i]) - 1)]
+        # change remaining NA to 0
+        self.transform_na_zero()
+
+    def transform_na_zero(self):
+        """ Sets all NA (-1) to 0. Transform in-place.  """
+        for row in self.features:
+            for i in xrange(0, len(row)):
+                if row[i] < 0:
+                    row[i] = 0
+
     def get_label_sizes(self):
         sizes = {lbl: 0 for lbl in self.unique_labels}
         for lbl in self.labels:
