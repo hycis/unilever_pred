@@ -69,7 +69,7 @@ class DataSet(object):
         random.seed(123)
 
         for lbl in self.unique_labels:
-            lbl_idxes = filter_index(self.labels, lbl)
+            lbl_idxes = filter_index(self.labels, lambda x: x == lbl)
             lbl_data = data[lbl_idxes, :]
             non_na = [
                 filter(lambda x: x >= 0, lbl_data[:, AGREE_INDEXES[i]]) or [0] for i in xrange(0, agree_count)
