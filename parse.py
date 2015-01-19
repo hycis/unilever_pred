@@ -326,7 +326,8 @@ SCHEMA = (
 )
 
 
-AGREE_INDEXES = itertools.chain(map(lambda x: x[0] if x[1] == parse_agree else [], SCHEMA))
+AGREE_INDEXES = (itertools.chain(map(lambda x: x[0] if x[1] == parse_agree else [], SCHEMA)) +
+                 [277, 295])
 
 
 def read_csv(file_path):
