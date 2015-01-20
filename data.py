@@ -105,7 +105,7 @@ class DataSet(object):
 
     @property
     def features_no_ingre_prob_indexes(self):
-        return interval(155, 230) + interval(254, len(self.data[0]) - 2)
+        return interval(155, 229) + interval(254, len(self.data[0]) - 2)
 
     @property
     def features_no_ingre_prob(self):
@@ -129,7 +129,7 @@ class DataSet(object):
 
     @property
     def features_combined(self):
-        leftover_idxes = list(set(interval(2, len(self.data[0])-2)) - set(itertools.chain(*self.COMBINED_INDEX_LIST)))
+        leftover_idxes = list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*self.COMBINED_INDEX_LIST)))
         leftover_count = len(leftover_idxes)
         new = np.empty((len(self.data), len(self.COMBINED_INDEX_LIST) + len(leftover_idxes)))
         new[:, 0:leftover_count] = self.data[:, leftover_idxes]
