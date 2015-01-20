@@ -90,7 +90,7 @@ def write_pred_path(path, ids, preds):
 def write_pred(filename, ids, preds, dir="results"):
     if not os.path.exists(dir):
         os.mkdir(dir)
-    write_pred(dir + "/" + filename, ids, preds)
+    write_pred_path(dir + "/" + filename, ids, preds)
 
 
 def filter_index(arr, filter_fn):
