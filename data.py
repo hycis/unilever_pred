@@ -26,8 +26,7 @@ def _to_int(a):
     """
     Transform to int in-place.
     """
-    for i in xrange(0, len(a)):
-        a[i] = int(round(a[i]))
+    return map(lambda x: int(round(x)), a)
 
 
 class DataSet(object):
@@ -49,13 +48,10 @@ class DataSet(object):
             self.data = data
         else:
             self.data = data = np.load(filename)
-        self.ids = data[:, 0] # first column
-        self.prod_ids = data[:, 1]
-        self.labels = data[:, -1] # last column
+        self.ids = _to_int(data[:, 0]) # first column
+        self.prod_ids = _to_int(data[:, 1])
+        self.labels = _to_int(data[:, -1]) # last column
         self.features = data[:, 2:-1] # exclude first 2 and last columns
-        _to_int(self.ids)
-        _to_int(self.prod_ids)
-        _to_int(self.labels)
         self.unique_prod_ids = set(self.prod_ids)
         self.unique_labels = set(self.labels)
 
