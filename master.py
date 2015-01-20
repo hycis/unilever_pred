@@ -309,13 +309,13 @@ def main(args):
         else:
             train_preds = clf.predict(final_train_features[:, feat_idxes])
             diff = (train_preds - final_train_labels) ** 2
-            mse_mean = abs(sum(diff) / len(diff))
+            mse_mean = (sum(diff) / len(diff))
             mse_std = np.std(diff)
 
         line = "mean={:.4f} std={:.4f} params={}".format(mse_mean, mse_std, params)
         log(train_log, line)
         overall.append({
-            "mse": mse_mean,
+            "mse": abs(mse_mean),
             "std": mse_std,
             "params": params,
         })
