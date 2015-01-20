@@ -153,11 +153,11 @@ class DataSet(object):
 
 
 def count_unique(feats):
-    counts = []
-    for i in xrange(0, len(feats[0])):
-        counts.append({})
+    feat_count = len(feats[0])
+    counts = [{} for _ in xrange(0, feat_count)]
+
     for row in feats:
-        for i in xrange(0, len(feats[0])):
+        for i in xrange(0, feat_count):
             counts[i][row[i]] = counts[i].get(row[i], 0) + 1
     return counts
 
@@ -177,6 +177,9 @@ def gen_fake(feats, n_samples):
     :param feats: Rows of features for a specific label.
     :return:
     """
+    feat_count = len(feats[0])
+    random.seed(123)
+
     std = np.std(feats, axis=0)
     for i in xrange(0, len(std)):
         if std[i] < 0.00001:
@@ -195,14 +198,11 @@ def gen_fake(feats, n_samples):
             lst.append((k, accu))
         gen_random[i] = _create(lst, accu)
 
-
-    rows = []
-    for i in xrange(0, n_samples):
-        row = [0] * len(feats[0])
-        rows.append(row)
+    rows = np.empty((n_samples, feat_count))
+    for row in rows:
         for j in xrange(0, len(row)):
             row[j] = gen_random[j](j)
 
-    return np.array(rows)
+    return rows
 
 
