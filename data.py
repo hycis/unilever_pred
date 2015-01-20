@@ -24,7 +24,7 @@ def load_names():
 
 def _to_int(a):
     """
-    Transform to int in-place.
+    Returns a new list.
     """
     return map(lambda x: int(round(x)), a)
 
@@ -42,6 +42,12 @@ class DataSet(object):
         True,
         True,
     ]
+    INTERPOLATION_ROW_INDEX_LIST = [
+        xinterval(162, 194),
+        xinterval(195, 204), # smell
+        xinterval(205, 214), # strength of smell
+        xinterval(282, 286), # amount of foam
+    ]
 
     def __init__(self, filename=None, data=None):
         if data is not None:
@@ -57,6 +63,23 @@ class DataSet(object):
 
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
+
+    def transform_na_interpolated_row(self):
+        """ Row-wise interpolation. Transform in-place. """
+        data = self.data
+        range_count = len(self.INTERPOLATION_ROW_INDEX_LIST)
+        random.seed(123)
+
+        for row in data:
+            for rng in self.INTERPOLATION_ROW_INDEX_LIST:
+                non_na = (filter(lambda x: x >= 0, row[:, rng]) or [0])
+
+                for i in rng:
+                    if row[i] < 0:
+                        row[i] = non_na[random.randint(0, len(non_na) - 1)]
+
+        # change remaining NA to 0
+        self.transform_na_zero()
 
     def transform_na_interpolated(self):
         """ Interpolate all NA. Transform in-place. """
