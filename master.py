@@ -297,7 +297,7 @@ def main(args):
         out_preds = clf.predict(test_features[:, feat_idxes])
         out_test_ids = test.ids
         out_filename = get_filename(model_name, params, file_suffix)
-        write_pred(out_filename, out_test_ids, out_preds)
+        write_pred(out_filename, out_test_ids, out_preds, dir=args.dest)
 
         np.random.seed(123)
         if args.cv:
@@ -424,6 +424,7 @@ def main2():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='learning module.')
+    parser.add_argument("--dest", help="output dir name", default="results")
     parser.add_argument("-t", "--transform", help="feature transformation", required=True)
     parser.add_argument("-f", "--feature", help="feature set to use", required=True)
     parser.add_argument("-m", "--model", help="model to use", required=True)
