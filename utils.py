@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import csv as csv_mod
 import codecs
 import os
+import errno
 import re
 
 from sklearn import svm, preprocessing
@@ -11,6 +12,27 @@ from sklearn import svm, preprocessing
 COLLAPSE_WHITESPACE_RE = re.compile(r'\s+')
 AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
 AGREE_STD_RE = re.compile(r"(?<!\w)(little|much|a|it)(?!\w)", re.I)
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
+
+
+def drange(start, stop, step):
+    r = start
+    while r <= stop:
+        yield r
+        r += step
+
+
+def xinterval(start, end):
+    return xrange(start, end + 1)
 
 
 def interval(start, end):
@@ -54,13 +76,21 @@ def is_float(s):
         return False
 
 
-def write_pred(filename, ids, preds):
-    if not os.path.exists('results'):
-        os.mkdir('results')
-    with open("results/" + filename, "w") as f:
+def clamp(v, minv, maxv):
+    return max(minv, min(maxv, v))
+
+
+def write_pred_path(path, ids, preds):
+    with open(path, "w") as f:
         f.write("ID,Overall.Opinion\n")
         for (id, p) in zip(ids, preds):
-            f.write("{},{:.6f}\n".format(id, p))
+            f.write("{},{:.6f}\n".format(id, clamp(p, 1, 7)))
+
+
+def write_pred(filename, ids, preds, dir="results"):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    write_pred_path(dir + "/" + filename, ids, preds)
 
 
 def filter_index(arr, filter_fn):
