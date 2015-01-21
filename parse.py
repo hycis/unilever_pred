@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-# TODO: interpolate the agree columns only
-# TODO: average the columns, group by category
-
-
 from __future__ import unicode_literals
 
 import csv as csv_mod

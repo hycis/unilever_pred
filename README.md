@@ -1,3 +1,7 @@
+# TODO: how to interpolate test data?
+# TODO: check out the feature weights
+# TODO: recursive feature elimination
+
 # unilever_pred
 This repo for the unilever product score prediction competition
 
