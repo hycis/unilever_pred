@@ -148,7 +148,6 @@ class DataSet(object):
         indexes = self.features_oo_only_indexes
         return self.data[:, indexes]
 
-<<<<<<< HEAD
     def idx_by_gradient_boost(self, topk=0, features=None):
         '''
         Select the topk most relevant features using Gradient Boosting Tree
@@ -163,17 +162,6 @@ class DataSet(object):
         topk_idx.sort()
         return topk_idx
 
-    # def features_by_idx(self, idx):
-    #     return features[:, idx]
-
-# 	def feature_importance_by_gradient_boost(self, features=self.features_no_ingre_prob()):
-# 		'''
-# 		Map the feature name to its relevant score
-# 		'''
-# 		clf = GradientBoostingRegressor()
-# 		clf.fit(features, self.labels)
-
-=======
     @property
     def features_combined(self):
         leftover_idxes = list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*self.COMBINED_INDEX_LIST)))
@@ -217,8 +205,6 @@ def _create(lst, total):
                 return p[0]
         raise Exception("invalid")
     return a
->>>>>>> 4187624595137e110474f0ad60305b4998edbebe
-
 
 def gen_fake(feats, n_samples):
     """
@@ -252,5 +238,3 @@ def gen_fake(feats, n_samples):
             row[j] = gen_random[j](j)
 
     return rows
-
-
