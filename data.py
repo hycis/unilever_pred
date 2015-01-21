@@ -44,6 +44,14 @@ class DataSet(object):
         True,
         True,
     ]
+    COMBINED_PROB_INDEX_LIST = [
+        xinterval(230, 241), # problems
+        xinterval(242, 253), # problems additional
+    ]
+    COMBINED_PROB_SUM_LIST = [
+        True,
+        True,
+    ]
     INTERPOLATION_ROW_INDEX_LIST = [
         xinterval(162, 194),
         xinterval(195, 204), # smell
@@ -164,18 +172,25 @@ class DataSet(object):
 
     @property
     def features_combined(self):
-        leftover_idxes = list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*self.COMBINED_INDEX_LIST)))
+        return self._get_features_combined(self.COMBINED_INDEX_LIST, self.COMBINED_SUM_LIST)
+
+    @property
+    def features_combined_prob(self):
+        return self._get_features_combined(self.COMBINED_PROB_INDEX_LIST, self.COMBINED_PROB_SUM_LIST)
+
+    def _get_features_combined(self, index_list, sum_list):
+        leftover_idxes = list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*index_list)))
         leftover_count = len(leftover_idxes)
-        new = np.empty((len(self.data), len(self.COMBINED_INDEX_LIST) + len(leftover_idxes)))
+        new = np.empty((len(self.data), len(index_list) + len(leftover_idxes)))
         new[:, 0:leftover_count] = self.data[:, leftover_idxes]
 
         for rowidx in xrange(0, len(self.data)):
             rangeidx = leftover_count
             i = 0
-            for therange in self.COMBINED_INDEX_LIST:
+            for therange in index_list:
                 non_na = filter(lambda x: x > 0, self.data[rowidx, therange])
                 if non_na:
-                    if self.COMBINED_SUM_LIST[i]:
+                    if sum_list[i]:
                         avg = sum(non_na)
                     else:
                         avg = sum(non_na) / float(len(non_na))
