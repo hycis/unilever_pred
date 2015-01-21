@@ -14,3 +14,7 @@ GradientBoostingRegressor  | | 0.217173 | Learning-rate = 0.08, n_estimators = 1
 GradientBoostingRegressor  | | 0.21678 | Learning-rate = 0.08, n_estimators = 140, max-depth=7 | na_Zero,no_ingre_prob
 
 
+135,6
+2212,6
+
+test size=2525
