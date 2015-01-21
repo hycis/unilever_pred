@@ -228,7 +228,7 @@ def param_set(param_specs):
 def get_class(class_path):
     if '.' not in class_path:
         for p2 in ('ensemble', 'tree', 'svm'):
-            pp = getattr(getattr(sklearn, p2), class_path)
+            pp = getattr(getattr(sklearn, p2), class_path, None)
             if pp:
                 return pp
         return None
