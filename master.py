@@ -210,7 +210,15 @@ def param_set(param_specs):
         param_names.append(name.strip())
         specs = map(str.strip, specs.split(','))
         specs = map(typ, specs)
-        param_ranges.append(drange(*specs))
+        if len(specs) == 1:
+            # constant value param.
+            param_ranges.append(specs)
+        else:
+            if typ == float:
+                # sometimes, due to floating point imprecision,
+                # the "end" value is not included in the range.
+                specs[1] += specs[2] - specs[2] / 10.
+            param_ranges.append(drange(*specs))
 
     for params in itertools.product(*param_ranges):
         param_set = dict(zip(param_names, params))
