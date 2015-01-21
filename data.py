@@ -8,6 +8,8 @@ import random
 from parse import AGREE_INDEXES
 from utils import interval, filter_index, csv_reader_utf8, xinterval
 
+from sklearn.ensemble import GradientBoostingRegressor
+
 
 TRAIN_FILENAME = 'train.npy'
 TEST_FILENAME = 'test.npy'
@@ -120,7 +122,7 @@ class DataSet(object):
         """
         :return: Features without ingredients.
         """
-        return self.data[:, 155:-1]
+        return self.data[:, 158:-1]
 
     @property
     def features_no_ingre_prob_indexes(self):
@@ -145,6 +147,20 @@ class DataSet(object):
         """
         indexes = self.features_oo_only_indexes
         return self.data[:, indexes]
+
+    def idx_by_gradient_boost(self, topk=0, features=None):
+        '''
+        Select the topk most relevant features using Gradient Boosting Tree
+        '''
+        if features is None:
+            # input features default to features without ingredient
+            features=self.features_no_ingre
+
+        clf = GradientBoostingRegressor()
+        clf.fit(features, self.labels)
+        topk_idx = clf.feature_importances_.argsort()[-topk:]
+        topk_idx.sort()
+        return topk_idx
 
     @property
     def features_combined(self):
@@ -190,7 +206,6 @@ def _create(lst, total):
         raise Exception("invalid")
     return a
 
-
 def gen_fake(feats, n_samples):
     """
     :param feats: Rows of features for a specific label.
@@ -223,5 +238,3 @@ def gen_fake(feats, n_samples):
             row[j] = gen_random[j](j)
 
     return rows
-
-

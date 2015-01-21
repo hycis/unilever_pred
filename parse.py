@@ -373,4 +373,3 @@ if __name__ == '__main__':
     test.transform_na_zero()
     np.save(data.TEST_FILENAME, test.data)
 
-

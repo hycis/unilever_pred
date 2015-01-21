@@ -140,3 +140,4 @@ def csv_reader_utf8(file_path, **kwargs):
     for row in csv_reader:
         # decode UTF-8 back to Unicode, cell by cell:
         yield [unicode(cell, 'utf-8') for cell in row]
+
