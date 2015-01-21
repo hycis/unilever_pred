@@ -4,6 +4,8 @@ import numpy as np
 
 from utils import interval, filter_index, csv_reader_utf8
 
+from sklearn.ensemble import GradientBoostingRegressor
+
 
 TRAIN_FILENAME = 'train.npy'
 TEST_FILENAME = 'test.npy'
@@ -41,7 +43,7 @@ class DataSet(object):
         """
         :return: Features without ingredients.
         """
-        return self.data[:, 155:-1]
+        return self.data[:, 158:-1]
 
     @property
     def features_no_ingre_prob_indexes(self):
@@ -62,6 +64,31 @@ class DataSet(object):
         """
         indexes = interval(155, 161) + [216, 277, 278, 287, 288, 293]
         return self.data[:, indexes]
+
+    def idx_by_gradient_boost(self, topk=0, features=None):
+        '''
+        Select the topk most relevant features using Gradient Boosting Tree
+        '''
+        if features is None:
+            # input features default to features without ingredient
+            features=self.features_no_ingre
+
+        clf = GradientBoostingRegressor()
+        clf.fit(features, self.labels)
+        topk_idx = clf.feature_importances_.argsort()[-topk:]
+        topk_idx.sort()
+        return topk_idx
+
+    # def features_by_idx(self, idx):
+    #     return features[:, idx]
+
+# 	def feature_importance_by_gradient_boost(self, features=self.features_no_ingre_prob()):
+# 		'''
+# 		Map the feature name to its relevant score
+# 		'''
+# 		clf = GradientBoostingRegressor()
+# 		clf.fit(features, self.labels)
+
 
 
 def gen_fake(feats, n_samples):
