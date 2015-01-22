@@ -184,12 +184,27 @@ class DataSet(object):
     def features_combined(self):
         return self._get_features_combined(self.COMBINED_INDEX_LIST, self.COMBINED_SUM_LIST)
 
+    def get_features_combined_names(self, names):
+        index_list = self.COMBINED_INDEX_LIST
+        names = ["combined-{}".format(i) for i in xrange(0, len(index_list))]
+        leftover_idxes = self._get_combined_leftover_indexes(index_list)
+        return np.append(names[leftover_idxes, :], names)
+
     @property
     def features_combined_prob(self):
         return self._get_features_combined(self.COMBINED_PROB_INDEX_LIST, self.COMBINED_PROB_SUM_LIST)
 
+    def get_features_combined_prob_names(self, names):
+        index_list = self.COMBINED_PROB_INDEX_LIST
+        names = ["combined-{}".format(i) for i in xrange(0, len(index_list))]
+        leftover_idxes = self._get_combined_leftover_indexes(index_list)
+        return np.append(names[leftover_idxes, :], names)
+
+    def _get_combined_leftover_indexes(self, index_list):
+        return list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*index_list)))
+
     def _get_features_combined(self, index_list, sum_list):
-        leftover_idxes = list(set(interval(155, len(self.data[0])-2)) - set(itertools.chain(*index_list)))
+        leftover_idxes = self._get_combined_leftover_indexes(index_list)
         leftover_count = len(leftover_idxes)
         new = np.empty((len(self.data), len(index_list) + len(leftover_idxes)))
         new[:, 0:leftover_count] = self.data[:, leftover_idxes]
