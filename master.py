@@ -270,7 +270,7 @@ def main(args):
     """
 
 
-    train_log = open("{}-{}.log".format(model_name, file_suffix), "w+")
+    train_log = open("{}-{}.log".format(model_name, file_suffix), "a")
     train_log.write(SEP)
     train_log.write(str(datetime.datetime.now()) + "\n")
     train_log.write(SEP)
