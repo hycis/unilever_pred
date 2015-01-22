@@ -24,6 +24,8 @@ Model ID | Model | Cross-Validation Score | Test Score | Remarks | Features
         | GradientBoostingRegressor  | | 0.217173 | Learning-rate = 0.08, n_estimators = 100-140, max-depth=5,7,9 | na_Zero,no_ingre_prob
         | GradientBoostingRegressor  | | 0.21678 | Learning-rate = 0.08, n_estimators = 140, max-depth=7 | na_Zero,no_ingre_prob
         | GradientBoostingRegressor  | | 0.21366 | learning_rate=0.07, n_estimators=200, max-depth=6 | na_zero,no_ingre_prob
+        | GradientBoostingRegressor  | | 0.212674 | learning_rate=0.07, n_estimators=280, max-depth=6 | na_zero,no_ingre_prob
+        | GradientBoostingRegressor  | | 0.212533 | learning_rate=0.07, n_estimators=380, max-depth=6 | na_zero,no_ingre_prob
         | GradientBoostingRegressor |          | 0.222446 | Learning-rate = 0.1, n_estimators = 100 | [158:]
         | GradientBoostingRegressor |          | 0.221658 | Learning-rate = 0.1, n_estimators = 100 | [1:]
         | AverageModel              | 0.195236 | 0.222848 | Average of rfr, etr, gbr, br, br                     | [158:]
