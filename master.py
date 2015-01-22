@@ -309,6 +309,12 @@ def main(args):
         out_filename = get_filename(model_name, params, file_suffix)
         write_pred(out_filename, out_test_ids, out_preds, dir=args.dest)
 
+        if getattr(clf, 'feature_importances_', None) is not None:
+            fidxes = np.argsort(-clf.feature_importances_)
+            for i in fidxes:
+                line = "{:.6f}: {}".format(clf.feature_importances_[i], train_names[i])
+                log(train_log, line)
+
         np.random.seed(123)
         if args.cv:
             clf = model_cls(**params)
@@ -329,12 +335,6 @@ def main(args):
             "std": mse_std,
             "params": params,
         })
-
-        if getattr(clf, 'feature_importances_', None) is not None:
-            fidxes = np.argsort(-clf.feature_importances_)
-            for i in fidxes:
-                line = "{:.6f}: {}".format(clf.feature_importances_[i], train_names[i])
-                log(train_log, line)
 
     overall = sorted(overall, key=lambda a: (a['mse'], a['std']))
     train_log.write(SEP)
