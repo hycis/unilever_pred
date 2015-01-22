@@ -245,6 +245,7 @@ def main(args):
         args.feature,
         'bal' if args.balance else '',
     ]
+    data_names = load_names()
     file_suffix = ",".join(suffixes)
     model_cls = get_class(args.model)
     model_name = model_cls.__name__
@@ -257,6 +258,7 @@ def main(args):
 
     train_features = getattr(train, 'features_' + args.feature)
     test_features = getattr(test, 'features_' + args.feature)
+    train_names = getattr(train, 'get_features_' + args.feature + '_names')(data_names)
 
     """
     sel = SelectKBest(chi2, k=2)
@@ -327,6 +329,12 @@ def main(args):
             "std": mse_std,
             "params": params,
         })
+
+        if getattr(clf, 'feature_importances_', None) is not None:
+            fidxes = np.argsort(-clf.feature_importances_)
+            for i in fidxes:
+                line = "{:.6f}: {}".format(clf.feature_importances_[i], train_names[i])
+                log(train_log, line)
 
     overall = sorted(overall, key=lambda a: (a['mse'], a['std']))
     train_log.write(SEP)
