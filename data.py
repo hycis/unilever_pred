@@ -21,7 +21,7 @@ def load_names():
     csv = csv_reader_utf8("desc.csv")
     for row in csv:
         break
-    return [row[1] for row in csv]
+    return np.array([row[1] for row in csv])
 
 
 def _to_int(a):
@@ -126,15 +126,25 @@ class DataSet(object):
         return sizes
 
     @property
+    def features_no_ingre_indexes(self):
+        return interval(158, len(self.data[0]) - 2)
+
+    def get_features_no_ingre_names(self, names):
+        return names[self.features_no_ingre_indexes, :]
+
+    @property
     def features_no_ingre(self):
         """
         :return: Features without ingredients.
         """
-        return self.data[:, 158:-1]
+        return self.data[:, self.features_no_ingre_indexes]
 
     @property
     def features_no_ingre_prob_indexes(self):
         return interval(155, 229) + interval(254, len(self.data[0]) - 2)
+
+    def get_features_no_ingre_prob_names(self, names):
+        return names[self.features_no_ingre_prob_indexes, :]
 
     @property
     def features_no_ingre_prob(self):
