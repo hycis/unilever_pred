@@ -140,6 +140,47 @@ class DataSet(object):
         return self.data[:, self.features_no_ingre_indexes]
 
     @property
+    def features_no_ingre_prob_combined_indexes(self):
+        return self.features_no_ingre_prob_indexes
+
+    def get_features_no_ingre_prob_combined_names(self, names):
+        r = self.get_features_no_ingre_prob_names(names)
+        index_list = self.COMBINED_INDEX_LIST
+        extra_len = len(index_list) + 1
+        return np.append(r, ["extra-{}".format(i) for i in xrange(0, extra_len)])
+
+    @property
+    def features_no_ingre_prob_combined(self):
+        """
+        :return: Features without ingredients and without the optional problems.
+        """
+        index_list = self.COMBINED_INDEX_LIST
+        len_index = len(index_list)
+        new = np.empty((len(self.data), 1 + len_index))
+
+        for rowidx in xrange(0, len(self.data)):
+            rangeidx = 0
+            i = 0
+            for therange in index_list:
+                non_na = filter(lambda x: x > 0, self.data[rowidx, therange])
+                if non_na:
+                    if sum_list[i]:
+                        avg = sum(non_na)
+                    else:
+                        avg = sum(non_na) / float(len(non_na))
+                else:
+                    avg = 0 # TODO: interpolate this?
+                new[rowidx, rangeidx] = avg
+                rangeidx += 1
+                i += 1
+            what = filter(lambda x: x > 0, self.data[rowidx, [158,160,161,278]])
+            if not what: what = [self.labels[rowidx]]
+            new[rowidx, rangeidx] = sum(what) / len(what)
+
+        no_ingre_prob = self.data[:, self.features_no_ingre_prob_combined_indexes]
+        return np.concatenate((no_ingre_prob, new), axis=1)
+
+    @property
     def features_no_ingre_prob_indexes(self):
         return interval(155, 229) + interval(254, len(self.data[0]) - 2)
 
