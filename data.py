@@ -155,6 +155,7 @@ class DataSet(object):
         :return: Features without ingredients and without the optional problems.
         """
         index_list = self.COMBINED_INDEX_LIST
+        sum_list = self.COMBINED_SUM_LIST
         len_index = len(index_list)
         new = np.empty((len(self.data), 1 + len_index))
 
