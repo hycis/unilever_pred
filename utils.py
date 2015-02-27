@@ -138,7 +138,8 @@ def write_rank_path(filename, test_data, ids, preds, dir):
 
     for pid in set(test_data.prod_ids):
         pidxes = filter_index(test_data.prod_ids, lambda x: x == pid)
-        tids = set(test_data.ids[pidxes])
+        test_ids = np.array(test_data.ids)
+        tids = set(test_ids[pidxes])
         pidxes = filter_index(ids, lambda x: x in tids)
         prod_preds = preds[pidxes]
         avg = np.average(prod_preds)
