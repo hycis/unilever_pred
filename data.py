@@ -126,6 +126,20 @@ class DataSet(object):
         return sizes
 
     @property
+    def features_ingre_indexes(self):
+        return interval(2, 154)
+
+    def get_features_ingre_names(self, names):
+        return names[self.features_ingre_indexes, :]
+
+    @property
+    def features_ingre(self):
+        """
+        :return: Features only ingredients.
+        """
+        return self.data[:, self.features_ingre_indexes]
+
+    @property
     def features_no_ingre_indexes(self):
         return interval(158, len(self.data[0]) - 2)
 
