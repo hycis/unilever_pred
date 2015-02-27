@@ -13,7 +13,7 @@ from sklearn.feature_selection import chi2
 
 from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, TRAIN_RAW_FILENAME, TEST_RAW_FILENAME, load_names, gen_fake
 from cluster import compute_clusters, get_non_na_only
-from utils import write_pred, filter_index, mse, drange
+from utils import write_pred, write_rank_path, filter_index, mse, drange
 
 
 SEP = "=" * 80 + "\n"
@@ -307,7 +307,9 @@ def main(args):
         out_preds = clf.predict(test_features[:, feat_idxes])
         out_test_ids = test.ids
         out_filename = get_filename(model_name, params, file_suffix)
+        out_filename_rank = get_filename(model_name, params, file_suffix + "_rank")
         write_pred(out_filename, out_test_ids, out_preds, dir=args.dest)
+        write_rank_path(out_filename_rank, test, out_test_ids, out_preds, dir=args.dest)
 
         if getattr(clf, 'feature_importances_', None) is not None:
             fidxes = np.argsort(-clf.feature_importances_)

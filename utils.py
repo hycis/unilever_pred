@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import numpy as np
 import csv as csv_mod
 import codecs
 import os
@@ -12,6 +13,40 @@ from sklearn import svm, preprocessing
 COLLAPSE_WHITESPACE_RE = re.compile(r'\s+')
 AGREE_RE = re.compile(r"\s*\((?P<number>\d+)\)$")
 AGREE_STD_RE = re.compile(r"(?<!\w)(little|much|a|it)(?!\w)", re.I)
+
+_RANK_DATA = [
+1,"DP00103",
+2,"DP00108",
+3,"DP00113",
+4,"DP00120",
+5,"DP00127",
+6,"DP0013",
+7,"DP00131",
+8,"DP00133",
+9,"DP00137",
+10,"DP00152",
+11,"DP00153",
+12,"DP0018",
+13,"DP0019",
+14,"DP002",
+15,"DP0031",
+16,"DP0032",
+17,"DP0033",
+18,"DP0040",
+19,"DP0047",
+20,"DP0052",
+21,"DP0057",
+22,"DP0059",
+23,"DP0061",
+24,"DP0073",
+25,"DP0076",
+26,"DP0079",
+27,"DP0088",
+28,"DP0095",
+]
+PROD_ID_TO_ID = {
+    int(_RANK_DATA[i + 1][2:]): (_RANK_DATA[i], _RANK_DATA[i + 1]) for i in xrange(0, len(_RANK_DATA), 2)
+}
 
 
 def mkdir_p(path):
@@ -91,6 +126,32 @@ def write_pred(filename, ids, preds, dir="results"):
     if not os.path.exists(dir):
         os.mkdir(dir)
     write_pred_path(dir + "/" + filename, ids, preds)
+
+
+def write_rank_path(filename, test_data, ids, preds, dir):
+
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    path = dir + "/" + filename
+    preds = np.array(list(preds))
+    ranks = []
+
+    for pid in set(test_data.prod_ids):
+        pidxes = filter_index(test_data.prod_ids, lambda x: x == pid)
+        tids = set(test_data.ids[pidxes])
+        pidxes = filter_index(ids, lambda x: x in tids)
+        prod_preds = preds[pidxes]
+        avg = np.average(prod_preds)
+        ranks.append({'avg': avg, 'pid': pid})
+
+    ranks = sorted(ranks, key=lambda x: -x['avg'])
+
+    with open(path, "w") as f:
+        f.write("ID,ProductD,Rank\n")
+        for rank in xrange(0, len(ranks)):
+            pid = ranks[rank]['pid']
+            id, pid_str = PROD_ID_TO_ID[pid]
+            f.write("{},{},{}\n".format(id, pid_str, rank + 1))
 
 
 def filter_index(arr, filter_fn):
