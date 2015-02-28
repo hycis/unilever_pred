@@ -8,6 +8,10 @@ __Things To Do__
 # TODO: how to interpolate test data?
 # TODO: check out the feature weights
 # TODO: recursive feature elimination
+# TODO: do the avg plots and auto-detect gradient
+# TODO: interpolatio by label
+# TODO: which ingredient correlate with which attribute
+# TODO: correlation with OO score
 
 Test Labels
 ===========
@@ -35,3 +39,11 @@ Model ID | Model | Cross-Validation Score | Test Score | Remarks | Features
         | AverageModel              | 0.191267 | 0.218865 | Average of  rfr, etr, svr, gbr, br, br(gbr), br(gbr) | Top 50
 ave_model1 | AverageMode            | 0.1896 | 0.21511  |                                                        | Top 100
 
+
+Phase 2: MSE
+
+Model| CV score  | Pub Score | Params
+-----|-----------|-----------|--------
+GBR  |           | 0.5156    | learning_rate=0.05_max_depth=2_n_estimators=200
+GBR  |           | 0.5153    | learning_rate=0.05_max_depth=2_n_estimators=150
+GBR  |           | 0.5152    | learning_rate=0.04_max_depth=2_n_estimators=140
