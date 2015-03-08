@@ -42,6 +42,12 @@ ave_model1 | AverageMode            | 0.1896 | 0.21511  |                       
 
 Phase 2: MSE
 
+Rank
+
+Model| CV score  | Pub Score | Params
+-----|-----------|-----------|--------
+RF   |           | .4103     | max_depth=5_max_features=15_n_estimators=250
+
 Model| CV score  | Pub Score | Params
 -----|-----------|-----------|--------
 GBR  |           | 0.5156    | learning_rate=0.05_max_depth=2_n_estimators=200
