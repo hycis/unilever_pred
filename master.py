@@ -308,7 +308,9 @@ def main(args):
         out_test_ids = test.ids
         out_filename = get_filename(model_name, params, file_suffix)
         out_filename_rank = get_filename(model_name, params, file_suffix + "_rank")
+        out_filename_raw_rank = get_filename(model_name, params, file_suffix + "_rr")
         write_pred(out_filename, out_test_ids, out_preds, dir=args.dest)
+        write_raw_rank(out_filename_raw_rank, test, out_test_ids, out_preds, dir=args.dest)
         write_rank_path(out_filename_rank, test, out_test_ids, out_preds, dir=args.dest)
 
         if getattr(clf, 'feature_importances_', None) is not None:

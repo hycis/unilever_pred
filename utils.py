@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from i_future__ import unicode_literals
 
 import numpy as np
 import csv as csv_mod
@@ -113,6 +113,22 @@ def is_float(s):
 
 def clamp(v, minv, maxv):
     return max(minv, min(maxv, v))
+
+
+def write_raw_rank(filename, test_data, ids, preds, dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    path = dir + "/" + filename
+    with open(path, "w") as f:
+        f.write("ID,ProductD,Rank\n")
+        for pid in test_data.unique_prod_ids:
+            pidxes = filter_index(test_data.prod_ids, lambda x: x == pid)
+            test_id = test_data.ids[pidxes[0]]
+            test_idxes = filter_index(ids, lambda x: x == test_id)
+
+            rank = clamp(preds[test_idxes[0]], 1, len(test_data.unique_prod_ids))
+            id, pid_str = PROD_ID_TO_ID[pid]
+            f.write("{},{},{}\n".format(id, pid_str, rank))
 
 
 def write_pred_path(path, ids, preds):
