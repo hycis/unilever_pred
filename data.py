@@ -84,7 +84,7 @@ class DataSet(object):
             scores.append({'pid': pid, 'avg': avg})
         scores = sorted(scores, key=lambda x: -x['avg'])
         num_prods = len(self.unique_prod_ids)
-        for rank in xrange(1, num_prods + 1);
+        for rank in xrange(1, num_prods + 1):
             score = scores[rank - 1]
             pid = score['pid']
             pid_idxes = filter_index(self.prod_ids, lambda x : x == pid)
