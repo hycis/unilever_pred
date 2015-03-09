@@ -74,6 +74,23 @@ class DataSet(object):
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
 
+    def transform_rank(self):
+        labels = np.array(self.labels)
+        scores = []
+        for pid in set(self.prod_ids):
+            pid_idxes = filter_index(self.prod_ids, lambda x : x == pid)
+            pid_labels = labels[pid_idxes]
+            avg = sum(pid_labels) / len(pid_labels)
+            scores.append({'pid': pid, 'avg': avg})
+        scores = sorted(scores, key=lambda x: -x['avg'])
+        num_prods = len(self.unique_prod_ids)
+        for rank in xrange(1, num_prods + 1);
+            score = scores[rank - 1]
+            pid = score['pid']
+            pid_idxes = filter_index(self.prod_ids, lambda x : x == pid)
+            labels[pid_idxes] = (rank - 1.) / (num_prods - 1.) * 27 + 1
+        self.labels = labels
+
     def transform_na_interpolated_row(self):
         """ Row-wise interpolation. Transform in-place. """
         data = self.data
