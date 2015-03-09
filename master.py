@@ -13,7 +13,7 @@ from sklearn.feature_selection import chi2
 
 from data import DataSet, TRAIN_FILENAME, TEST_FILENAME, TRAIN_RAW_FILENAME, TEST_RAW_FILENAME, load_names, gen_fake
 from cluster import compute_clusters, get_non_na_only
-from utils import write_pred, write_rank_path, filter_index, mse, drange
+from utils import write_pred, write_raw_rank, write_rank_path, filter_index, mse, drange
 
 
 SEP = "=" * 80 + "\n"
