@@ -208,17 +208,22 @@ def param_set(param_specs):
         name, specs = p.split('=')
         typ = float if '.' in specs else int
         param_names.append(name.strip())
-        specs = map(str.strip, specs.split(','))
-        specs = map(typ, specs)
-        if len(specs) == 1:
-            # constant value param.
-            param_ranges.append(specs)
+        if specs.lower() == 'true':
+            param_ranges.append([True])
+        elif specs.lower() == 'false':
+            param_ranges.append([False])
         else:
-            if typ == float:
-                # sometimes, due to floating point imprecision,
-                # the "end" value is not included in the range.
-                specs[1] += specs[2] - specs[2] / 10.
-            param_ranges.append(drange(*specs))
+            specs = map(str.strip, specs.split(','))
+            specs = map(typ, specs)
+            if len(specs) == 1:
+                # constant value param.
+                param_ranges.append(specs)
+            else:
+                if typ == float:
+                    # sometimes, due to floating point imprecision,
+                    # the "end" value is not included in the range.
+                    specs[1] += specs[2] - specs[2] / 10.
+                param_ranges.append(drange(*specs))
 
     for params in itertools.product(*param_ranges):
         param_set = dict(zip(param_names, params))
@@ -227,7 +232,7 @@ def param_set(param_specs):
 
 def get_class(class_path):
     if '.' not in class_path:
-        for p2 in ('ensemble', 'tree', 'svm'):
+        for p2 in ('ensemble', 'tree', 'svm', 'linear_model'):
             pp = getattr(getattr(sklearn, p2), class_path, None)
             if pp:
                 return pp
