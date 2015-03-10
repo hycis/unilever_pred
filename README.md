@@ -46,7 +46,10 @@ Rank
 
 Model| CV score  | Pub Score | Params
 -----|-----------|-----------|--------
+RF   |           | .483824   | max_depth=4_max_features=15_n_estimators=350
 RF   |           | .4103     | max_depth=5_max_features=15_n_estimators=250
+RF   |           | .398529   | max_depth=5_max_features=12_n_estimators=210
+RF   |           | .397794   | max_depth=5_max_features=12_n_estimators=210 and max_depth=5_max_features=15_n_estimators=250
 
 Model| CV score  | Pub Score | Params
 -----|-----------|-----------|--------
