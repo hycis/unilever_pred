@@ -261,6 +261,8 @@ def main(args):
     getattr(train, 'transform_' + args.transform)()
     getattr(test, 'transform_' + args.transform)()
 
+    clamp = not(args.transform.startswith('rank') and args.transform != 'rank')
+
     train_features = getattr(train, 'features_' + args.feature)
     test_features = getattr(test, 'features_' + args.feature)
     train_names = getattr(train, 'get_features_' + args.feature + '_names')(data_names)
@@ -314,7 +316,7 @@ def main(args):
         out_filename = get_filename(model_name, params, file_suffix)
         out_filename_rank = get_filename(model_name, params, file_suffix + "_rank")
         out_filename_raw_rank = get_filename(model_name, params, file_suffix + "_rr")
-        write_pred(out_filename, out_test_ids, out_preds, dir=args.dest)
+        write_pred(out_filename, out_test_ids, out_preds, dir=args.dest, clamp=clamp)
         write_raw_rank(out_filename_raw_rank, test, out_test_ids, out_preds, dir=args.dest)
         write_rank_path(out_filename_rank, test, out_test_ids, out_preds, dir=args.dest)
 

@@ -131,11 +131,16 @@ def write_raw_rank(filename, test_data, ids, preds, dir):
             f.write("{},{},{}\n".format(id, pid_str, rank))
 
 
-def write_pred_path(path, ids, preds):
+def write_pred_path(path, ids, preds, clamp=True):
+    themin = 1
+    themax = 7
+    if not clamp:
+        themin = 0
+        themax = 1e10
     with open(path, "w") as f:
         f.write("ID,Overall.Opinion\n")
         for (id, p) in zip(ids, preds):
-            f.write("{},{:.6f}\n".format(id, clamp(p, 1, 7)))
+            f.write("{},{:.6f}\n".format(id, clamp(p, themin, themax)))
 
 
 def write_pred(filename, ids, preds, dir="results"):
