@@ -74,6 +74,40 @@ class DataSet(object):
     def get_prod_indexes(self, id):
         return filter_index(self.prod_ids, lambda x: x == id)
 
+    def transform_rank_internal(self, r):
+        labels = np.array(self.labels)
+        scores = []
+        for pid in set(self.prod_ids):
+            pid_idxes = filter_index(self.prod_ids, lambda x : x == pid)
+            pid_labels = labels[pid_idxes]
+            count = 0
+            for lbl in pid_labels:
+                if lbl == r:
+                    count += 1
+            labels[pid_idxes] = count
+        self.labels = labels
+
+    def transform_rank1(self):
+        self.transform_rank_internal(1)
+
+    def transform_rank2(self):
+        self.transform_rank_internal(2)
+
+    def transform_rank3(self):
+        self.transform_rank_internal(3)
+
+    def transform_rank4(self):
+        self.transform_rank_internal(4)
+
+    def transform_rank5(self):
+        self.transform_rank_internal(5)
+
+    def transform_rank6(self):
+        self.transform_rank_internal(6)
+
+    def transform_rank7(self):
+        self.transform_rank_internal(7)
+
     def transform_rank(self):
         labels = np.array(self.labels)
         scores = []
