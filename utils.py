@@ -115,6 +115,10 @@ def clamp(v, minv, maxv):
     return max(minv, min(maxv, v))
 
 
+def clampvalue(v, minv, maxv):
+    return max(minv, min(maxv, v))
+
+
 def write_raw_rank(filename, test_data, ids, preds, dir):
     if not os.path.exists(dir):
         os.mkdir(dir)
@@ -140,7 +144,7 @@ def write_pred_path(path, ids, preds, clamp=True):
     with open(path, "w") as f:
         f.write("ID,Overall.Opinion\n")
         for (id, p) in zip(ids, preds):
-            f.write("{},{:.6f}\n".format(id, clamp(p, themin, themax)))
+            f.write("{},{:.6f}\n".format(id, clampvalue(p, themin, themax)))
 
 
 def write_pred(filename, ids, preds, dir="results", clamp=True):
