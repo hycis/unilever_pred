@@ -143,10 +143,10 @@ def write_pred_path(path, ids, preds, clamp=True):
             f.write("{},{:.6f}\n".format(id, clamp(p, themin, themax)))
 
 
-def write_pred(filename, ids, preds, dir="results"):
+def write_pred(filename, ids, preds, dir="results", clamp=True):
     if not os.path.exists(dir):
         os.mkdir(dir)
-    write_pred_path(dir + "/" + filename, ids, preds)
+    write_pred_path(dir + "/" + filename, ids, preds, clamp=clamp)
 
 
 def write_rank_path(filename, test_data, ids, preds, dir):
