@@ -5,7 +5,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 
-from utils import write_rank_path
+from utils import write_rank_path, write_pred
 from data import DataSet
 
 
@@ -23,7 +23,7 @@ def read(path):
 def main():
     test_data = DataSet('test.npy')
     for filepath in glob.glob('rank1/*ingre,_*'):
-        if '_rank_' in filepath:
+        if '_rank_' in filepath or '_rr_' in filepath:
             continue
         filename = os.path.basename(filepath)
         master = read(filepath)
@@ -37,11 +37,13 @@ def main():
                 sums[k] += v
         ids = []
         preds = []
-        for (k, v) in master.iteritems():
-            master[k] = v / sums[k]
-            preds.append(master[k])
+        for k in test_data.ids:
+            s = master[k] / sums[k]
+            preds.append(s)
             ids.append(k)
-        write_rank_path(filename, test_data, ids, preds, dir='rank-combined')
+        rankfilename = filename.replace('ingre,', 'ingre,_rank')
+        write_pred(filename, ids, preds, dir='rank-combined')
+        write_rank_path(rankfilename, test_data, ids, preds, dir='rank-combined')
 
 
 
