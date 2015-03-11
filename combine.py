@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import glob
+import os
 from os import listdir
 from os.path import isfile, join
 
@@ -20,10 +22,8 @@ def read(path):
 
 def main():
     test_data = DataSet('test.npy')
-    for filename in listdir('rank1'):
-        filepath = join('rank1', filename)
-        if not isfile(filepath):
-            continue
+    for filepath in glob.glob('rank1/*ingre,_*'):
+        filename = os.path.basename(filepath)
         master = read(filepath)
         sums = {k: v for (k, v) in master.iteritems()}
         for r in xrange(2, 8):
