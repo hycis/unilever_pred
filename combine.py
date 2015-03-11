@@ -23,6 +23,8 @@ def read(path):
 def main():
     test_data = DataSet('test.npy')
     for filepath in glob.glob('rank1/*ingre,_*'):
+        if '_rank_' in filepath:
+            continue
         filename = os.path.basename(filepath)
         master = read(filepath)
         sums = {k: v for (k, v) in master.iteritems()}
