@@ -26,9 +26,14 @@ def main(args):
             else:
                 sums[k] += 1
                 master[k] += v
+
+        srted = sorted(list(master.iteritems()), key=lambda x: x[1] / sums[x[0]])
+
         with open(args.dest, 'w') as f:
             f.write('ID,ProductD,Rank\n')
-            for (k, v) in master.iteritems():
+            for a in srted:
+                k = a[0]
+                v = a[1]
                 avg = v / sums[k]
                 f.write('{},{},{}\n'.format(k[0], k[1], avg))
 
