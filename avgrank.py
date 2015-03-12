@@ -11,6 +11,7 @@ def read(filepath):
         for line in f:
             id, pid, rank = line.strip().split(',')
             m[(int(id), pid.strip().upper())] = float(rank)
+    return m
 
 
 def main(args):
