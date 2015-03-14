@@ -3,6 +3,9 @@
 import argparse
 import glob
 
+import numpy as np
+
+
 def read(filepath):
     m = {}
     with open(filepath, 'r') as f:
@@ -16,16 +19,19 @@ def read(filepath):
 
 def main(args):
     master = {}
+    ind = {}
     sums = {}
     for filename in glob.glob(args.src):
         p = read(filename)
         for (k, v) in p.iteritems():
             if k not in master:
+                ind[k] = [v]
                 master[k] = v
                 sums[k] = 1
             else:
                 sums[k] += 1
                 master[k] += v
+                ind[k].append(v)
 
         srted = sorted(list(master.iteritems()), key=lambda x: x[1] / sums[x[0]])
 
@@ -41,6 +47,7 @@ def main(args):
                 elif 14.5 < rank <= 26:
                     avg = (14.5+26)/2
                 rank += 1
+                print("{}, std={}".format(k, np.std(ind[k])))
                 f.write('{},{},{}\n'.format(k[0], k[1], avg))
 
 
