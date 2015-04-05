@@ -181,7 +181,7 @@ class DataSet(object):
         return interval(2, 154)
 
     def get_features_ingre_names(self, names):
-        return names[self.features_ingre_indexes, :]
+        return names[(self.features_ingre_indexes)]
 
     @property
     def features_ingre(self):
